@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gruppeneinteilung</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .hidden {
+            display: none;
+        }
+        .btn {
+            background-color: #007AFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+			color: white;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin: 10px 0;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #classSelect {
+            background-color: #f8f9fa;
+            color: black;
+            border: 2px solid #007AFF;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+            text-align: left;
+            appearance: auto;
+        }
+        #classSelect:hover {
+            background-color: #f8f9fa;
+            border-color: #0056b3;
+        }
+        #classSelect:focus {
+            outline: none;
+            border-color: #0056b3;
+            box-shadow: 0 0 5px rgba(0, 87, 179, 0.5);
+        }
+        .students-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+            min-height: 50px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+		.students-pool-container {
+		    position: relative;
+		    margin: 20px 0;
+		}
+        .student-item {
+            background: #e9ecef;
+            color: #333;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: move;
+            user-select: none;
+            margin: 3px;
+        }
+        .groups-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .group {
+            background: #f8f9fa;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            min-height: 100px;
+            padding: 10px;
+        }
+        .group-title {
+            text-align: center;
+            margin-bottom: 10px;
+            color: black;
+            font-weight: bold;
+        }
+        .group-content {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-height: 50px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+		input[type="number"] {
+		    width: 80px;
+		    padding: 8px 0px 8px 8px; /* Extra Padding rechts für die größeren Buttons */
+		    border: 1px solid #ddd;
+		    border-radius: 4px;
+		}
+
+		/* Größere Spin-Buttons */
+		input[type="number"]::-webkit-inner-spin-button,
+		input[type="number"]::-webkit-outer-spin-button {
+		    width: 20px;
+		    height: 30px;
+		    opacity: 1;
+		}
+		.modal {
+		    display: none;
+		    position: fixed;
+		    top: 0;
+		    left: 0;
+		    width: 100%;
+		    height: 100%;
+		    background-color: rgba(0, 0, 0, 0.7);
+		    z-index: 1000;
+		    /* Flexbox für vertikale Zentrierung */
+		    display: none; /* wird durch JS auf 'flex' gesetzt */
+		    justify-content: center;
+		    align-items: center;
+		}
+
+		.modal-content {
+		    position: relative;
+		    background-color: #fff;
+		    padding: 20px;
+		    width: 80%;
+		    max-width: 600px;
+		    border-radius: 8px;
+		    text-align: center;
+		    max-height: 80vh;
+		    overflow-y: auto;
+		    /* Entferne margin: auto, da Flexbox die Zentrierung übernimmt */
+		}
+
+		.random-list {
+		    text-align: left;
+		    white-space: pre-line;
+		    margin: 20px 0;
+		    padding: 10px;
+		    background: #f8f9fa;
+		    border-radius: 4px;
+		    /* Optional: Für bessere Lesbarkeit beim Scrollen */
+		    min-height: 100px;
+			line-height: 130%;
+		}
+
+		.close {
+		    position: absolute;
+		    right: 20px;
+		    top: 10px;
+		    font-size: 28px;
+		    cursor: pointer;
+		}
+
+		.random-name {
+		    font-size: 72px;
+			font-weight: bold;
+		    margin: 20px 0;
+		}
+
+		.random-button {
+            background-color: #f8f9fa;
+            color: black;
+            border: 2px solid #007AFF;
+            padding: 8px 16px;
+            border-radius: 4px;
+		}
+
+		.modal-buttons {
+		    margin-bottom: 20px;
+		}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="classManagement">
+            <select id="classSelect" onchange="selectClass()">
+                <option value="">Klasse auswählen...</option>
+            </select>
+            <button class="btn" onclick="showNewClassDialog()">Neue Klasse</button>
+            <button class="btn" id="deleteClassButton" onclick="deleteCurrentClass()" style="display: none;">Klasse löschen</button>
+        </div>
+
+        <div id="newClassDialog" class="hidden">
+            <h3>Neue Klasse erstellen</h3>
+            <input type="text" id="newClassName" placeholder="Klassenname">
+            <textarea id="studentsList" placeholder="Schülernamen (einer pro Zeile)"></textarea>
+            <button class="btn" onclick="createNewClass()">Erstellen</button>
+            <button class="btn" onclick="hideNewClassDialog()">Abbrechen</button>
+        </div>
+
+		<div id="groupManagement" class="hidden">
+		    <div class="students-pool-container">
+		        <div class="students-pool" id="studentsPool"></div>
+		    </div>
+			<div>
+		        <button class="btn" onclick="selectRandomStudent()">Zufälligen Namen auswählen</button>
+				<button class="btn" onclick="showRandomList()">Zufällige Namensliste anzeigen</button>
+			</div>
+    
+		    <div class="controls">
+		        <div>
+		            <label for="groupCount">Anzahl Gruppen:</label>
+		            <input type="number" id="groupCount" min="2" value="4" onchange="updateGroups('count')">
+		        </div>
+		        <div>
+		            <label for="studentsPerGroup">oder max. Schüler pro Gruppe:</label>
+		            <input type="number" id="studentsPerGroup" min="2" onchange="updateGroups('size')">
+		        </div>
+		        <div>
+					<button class="btn" onclick="randomizeGroups()">Gruppen zufällig füllen</button>
+			        <button class="btn" onclick="resetGroups()">Gruppen zurücksetzen</button>
+				</div>
+		    </div>
+    
+		    <div class="groups-container" id="groupsContainer"></div>
+		</div>
+		
+		<div id="randomNameModal" class="modal">
+		    <div class="modal-content">
+		        <span class="close">&times;</span>
+		        <div class="random-name" id="randomNameDisplay"></div>
+		    </div>
+		</div>
+		<div id="randomListModal" class="modal">
+		    <div class="modal-content">
+		        <span class="close">&times;</span>
+		        <div class="modal-buttons">
+		            <button class="btn" id="copyButton" onclick="copyToClipboard()">In die Zwischenablage kopieren</button>
+		        </div>
+		        <div class="random-list" id="randomListDisplay"></div>
+		    </div>
+		</div>
+	</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script>
+        let state = {
+            classes: {},
+            currentClass: null
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            updateClassSelect();
+            if (state.currentClass) {
+                document.getElementById('groupManagement').classList.remove('hidden');
+                initializeDragAndDrop();
+                updateGroups('count');
+            }
+        });
+
+        function saveState() {
+            localStorage.setItem('groupingAppState', JSON.stringify(state));
+        }
+
+        function loadState() {
+            const savedState = localStorage.getItem('groupingAppState');
+            if (savedState) {
+                state = JSON.parse(savedState);
+            }
+        }
+
+        function updateClassSelect() {
+            const select = document.getElementById('classSelect');
+            select.innerHTML = '<option value="">Klasse auswählen...</option>';
+            
+            const sortedClasses = Object.keys(state.classes).sort();
+            
+            sortedClasses.forEach(className => {
+                const option = document.createElement('option');
+                option.value = className;
+                option.textContent = className;
+                if (state.currentClass === className) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+            
+            const deleteButton = document.getElementById('deleteClassButton');
+            deleteButton.style.display = state.currentClass ? 'inline-block' : 'none';
+        }
+
+        function showNewClassDialog() {
+            document.getElementById('newClassDialog').classList.remove('hidden');
+        }
+
+        function hideNewClassDialog() {
+            document.getElementById('newClassDialog').classList.add('hidden');
+            document.getElementById('newClassName').value = '';
+            document.getElementById('studentsList').value = '';
+        }
+
+        function createNewClass() {
+            const className = document.getElementById('newClassName').value.trim();
+            const studentsText = document.getElementById('studentsList').value.trim();
+    
+            if (!className) {
+                alert('Bitte geben Sie einen Klassennamen ein.');
+                return;
+            }
+
+            const students = studentsText.split('\n')
+                .map(s => s.trim())
+                .filter(s => s.length > 0)
+                .sort();
+
+            if (students.length < 2) {
+                alert('Bitte geben Sie mindestens zwei Schüler ein.');
+                return;
+            }
+
+            state.classes[className] = {
+                students: students
+            };
+
+            saveState();
+            selectClass(className);
+            updateClassSelect();
+            hideNewClassDialog();
+        }
+
+        function deleteCurrentClass() {
+            if (!state.currentClass) return;
+            
+            if (confirm(`Möchten Sie die Klasse "${state.currentClass}" wirklich löschen?`)) {
+                delete state.classes[state.currentClass];
+                state.currentClass = null;
+                saveState();
+                updateClassSelect();
+                document.getElementById('groupManagement').classList.add('hidden');
+            }
+        }
+
+        function selectClass(className) {
+            const selectedClass = className || document.getElementById('classSelect').value;
+            state.currentClass = selectedClass;
+            saveState();
+            
+            if (selectedClass) {
+                document.getElementById('groupManagement').classList.remove('hidden');
+                initializeDragAndDrop();
+                updateGroups('count');
+            } else {
+                document.getElementById('groupManagement').classList.add('hidden');
+            }
+        }
+
+        function updateGroups(mode) {
+            if (!state.currentClass) return;
+
+            const classData = state.classes[state.currentClass];
+            const totalStudents = classData.students.length;
+            
+            let numGroups;
+            if (mode === 'count') {
+                numGroups = parseInt(document.getElementById('groupCount').value) || 2;
+                document.getElementById('studentsPerGroup').value = Math.ceil(totalStudents / numGroups);
+            } else {
+                const studentsPerGroup = parseInt(document.getElementById('studentsPerGroup').value) || 2;
+                numGroups = Math.ceil(totalStudents / studentsPerGroup);
+                document.getElementById('groupCount').value = numGroups;
+            }
+
+            const container = document.getElementById('groupsContainer');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < numGroups; i++) {
+                const group = document.createElement('div');
+                group.className = 'group';
+                group.innerHTML = `
+                    <div class="group-title">Gruppe ${i + 1}</div>
+                    <div class="group-content" data-group="${i}"></div>
+                `;
+                container.appendChild(group);
+            }
+
+            updateStudentsPool();
+            initializeDragAndDrop();
+        }
+
+        function resetGroups() {
+            if (confirm('Möchten Sie alle Gruppen zurücksetzen?')) {
+                updateGroups('count');
+            }
+        }
+
+        function updateStudentsPool() {
+            if (!state.currentClass) return;
+
+            const pool = document.getElementById('studentsPool');
+            pool.innerHTML = '';
+            
+            const assignedStudents = new Set();
+            document.querySelectorAll('.group-content .student-item').forEach(item => {
+                assignedStudents.add(item.textContent);
+            });
+
+            state.classes[state.currentClass].students
+                .filter(student => !assignedStudents.has(student))
+                .forEach(student => {
+                    const item = document.createElement('div');
+                    item.className = 'student-item';
+                    item.textContent = student;
+                    pool.appendChild(item);
+                });
+        }
+
+        function initializeDragAndDrop() {
+            new Sortable(document.getElementById('studentsPool'), {
+                group: 'shared',
+                animation: 150,
+                onEnd: function() {
+                    updateStudentsPool();
+                }
+            });
+
+            document.querySelectorAll('.group-content').forEach(groupEl => {
+                new Sortable(groupEl, {
+                    group: 'shared',
+                    animation: 150,
+                    onEnd: function() {
+                        updateStudentsPool();
+                    }
+                });
+            });
+        }
+
+		function randomizeGroups() {
+		    const groups = Array.from(document.querySelectorAll('.group-content'));
+		    const totalGroups = groups.length;
+		    if (totalGroups === 0) return;
+
+		    // Sammle alle nicht zugeordneten Schüler
+		    const unassignedStudents = Array.from(document.getElementById('studentsPool').children)
+		        .map(el => el.textContent);
+    
+		    if (unassignedStudents.length === 0) return;
+
+		    // Mische die nicht zugeordneten Schüler
+		    for (let i = unassignedStudents.length - 1; i > 0; i--) {
+		        const j = Math.floor(Math.random() * (i + 1));
+		        [unassignedStudents[i], unassignedStudents[j]] = 
+		        [unassignedStudents[j], unassignedStudents[i]];
+		    }
+
+		    // Berechne die ideale Verteilung der Gruppengrößen
+		    const totalStudents = state.classes[state.currentClass].students.length;
+		    const minStudentsPerGroup = Math.floor(totalStudents / totalGroups);
+		    const extraStudents = totalStudents % totalGroups;
+
+		    // Erstelle ein Array mit den Zielgrößen für jede Gruppe
+		    const targetSizes = Array(totalGroups).fill(minStudentsPerGroup);
+    
+		    // Verteile die übrigen Schüler möglichst gleichmäßig
+		    // Beispiel: Bei 7 Schülern und 3 Gruppen wird es [3, 2, 2] statt [3, 3, 1]
+		    for (let i = 0; i < extraStudents; i++) {
+		        targetSizes[Math.floor(i * (totalGroups / extraStudents))]++;
+		    }
+
+		    // Berechne für jede Gruppe, wie viele Schüler noch hinzugefügt werden müssen
+		    const currentSizes = groups.map(group => group.children.length);
+		    const studentsNeeded = targetSizes.map((target, i) => target - currentSizes[i]);
+
+		    // Verteile die restlichen Schüler entsprechend der berechneten Zielgrößen
+		    let currentStudentIndex = 0;
+		    groups.forEach((group, groupIndex) => {
+		        const needed = studentsNeeded[groupIndex];
+		        for (let i = 0; i < needed && currentStudentIndex < unassignedStudents.length; i++) {
+		            const item = document.createElement('div');
+		            item.className = 'student-item';
+		            item.textContent = unassignedStudents[currentStudentIndex++];
+		            group.appendChild(item);
+		        }
+		    });
+
+		    updateStudentsPool();
+		}
+		function selectRandomStudent() {
+		    if (!state.currentClass) return;
+    
+		    const students = state.classes[state.currentClass].students;
+		    if (students.length === 0) return;
+    
+		    const randomStudent = students[Math.floor(Math.random() * students.length)];
+		    const modal = document.getElementById('randomNameModal');
+		    const nameDisplay = document.getElementById('randomNameDisplay');
+    
+		    nameDisplay.textContent = randomStudent;
+		    modal.style.display = 'flex';
+		}
+		
+		function shuffleArray(array) {
+		    for (let i = array.length - 1; i > 0; i--) {
+		        const j = Math.floor(Math.random() * (i + 1));
+		        [array[i], array[j]] = [array[j], array[i]];
+		    }
+		    return array;
+		}
+
+		function showRandomList() {
+		    if (!state.currentClass) return;
+    
+		    const students = [...state.classes[state.currentClass].students];
+		    const shuffledStudents = shuffleArray(students);
+    
+		    const modal = document.getElementById('randomListModal');
+		    const listDisplay = document.getElementById('randomListDisplay');
+    
+		    listDisplay.textContent = shuffledStudents.join('\n');
+		    modal.style.display = 'flex';
+		}
+
+		function copyToClipboard() {
+		    const listDisplay = document.getElementById('randomListDisplay');
+		    const copyButton = document.getElementById('copyButton');
+		    const originalText = copyButton.textContent;
+    
+		    navigator.clipboard.writeText(listDisplay.textContent).then(() => {
+		        copyButton.textContent = '✓ Kopiert';
+		        setTimeout(() => {
+		            copyButton.textContent = originalText;
+		        }, 2000); // Button-Text wird nach 2 Sekunden zurückgesetzt
+		    }).catch(err => {
+		        console.error('Fehler beim Kopieren:', err);
+		        copyButton.textContent = '✗ Fehler beim Kopieren';
+		        setTimeout(() => {
+		            copyButton.textContent = originalText;
+		        }, 2000);
+		    });
+		}
+
+		// Modal schließen wenn auf X oder außerhalb geklickt wird
+		document.addEventListener('DOMContentLoaded', () => {
+		    const modal = document.getElementById('randomNameModal');
+		    const span = document.getElementsByClassName('close')[0];
+    
+		    span.onclick = function() {
+		        modal.style.display = 'none';
+		    }
+    
+		    window.onclick = function(event) {
+		        if (event.target == modal) {
+		            modal.style.display = 'none';
+		        }
+		    }
+			const randomListModal = document.getElementById('randomListModal');
+		    const closeButtons = document.getElementsByClassName('close');
+
+		    Array.from(closeButtons).forEach(button => {
+		        button.onclick = function() {
+		            randomListModal.style.display = 'none';
+		            document.getElementById('randomNameModal').style.display = 'none';
+		        }
+		    });
+
+		    window.onclick = function(event) {
+		        if (event.target == randomListModal) {
+		            randomListModal.style.display = 'none';
+		        } else if (event.target == document.getElementById('randomNameModal')) {
+		            document.getElementById('randomNameModal').style.display = 'none';
+		        }
+		    }
+		});
+		
+    </script>
+</body>
+</html>
