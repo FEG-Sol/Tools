@@ -4,7 +4,7 @@
   *Schnelle Bewertung von Schülern.*
 
 - [Gruppeneinteilung](https://feg-sol.github.io/Tools/Gruppeneinteilung.html)  
-  *Automatische Gruppeneinteilung.*
+  *Zufällige Gruppeneinteilungen.*
 
 - [Ranking](https://feg-sol.github.io/Tools//Ranking.html)  
   *Ranking erstellen durch paarweisen Vergleich.*
