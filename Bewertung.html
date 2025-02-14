@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schüler-Bewertung</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+	<link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
+	<link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+	<link rel="shortcut icon" href="/favicon/favicon.ico" />
+	<link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+	<link rel="manifest" href="/favicon/site.webmanifest" />
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -55,7 +59,8 @@
         }
         .student-btn {
             background-color: #f8f9fa;
-            border: 2px solid #007AFF;
+			color: #000;
+            border: 1px solid #ddd;
             border-radius: 6px;
             padding: 8px;
             cursor: pointer;
@@ -129,10 +134,172 @@
             background-color: #c82333;
         }
         .control-panel {
-            margin: 20px 0;
+            margin: 10px 5px;
             /*border-top: 1px solid #ddd;
             border-bottom: 1px solid #ddd;*/
         }
+		
+		#editStudentsDialog,#newClassDialog {
+		    background: white;
+		    padding: 20px;
+		    border-radius: 4px;
+		    border: 1px solid #ddd;
+		    margin: 10px 0;
+			max-width:400px;
+		}
+
+
+		#newClassDialog h3,#editStudentsDialog h3 {
+		    margin: 0 0 15px 0;
+		    font-size: 18px;
+		    color: #333;
+		}
+
+		#newClassDialog input[type="text"],
+		#newClassDialog textarea {
+		    box-sizing: border-box;
+		    width: 100%;
+		    padding: 8px 12px;
+		    border: 1px solid #ddd;
+		    border-radius: 4px;
+		    font-size: 14px;
+		    margin-bottom: 10px;
+		    font-family: inherit;
+		}
+		
+		#newClassDialog input[type="text"]:focus,
+		#newClassDialog textarea:focus {
+		    outline: none;
+		    border-color: #007AFF;
+		    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+		}
+
+		#newClassDialog textarea {
+		    resize: vertical;
+		    min-height: 100px;
+		    max-height: 250px;
+		    margin: 10px 0;
+		    background: #f8f9fa;
+		}
+
+		#newClassDialog .btn {
+		    margin-right: 5px;
+		    margin-top: 5px;
+		}
+
+		.student-list {
+		    max-height: 250px;
+		    overflow-y: auto;
+		    margin: 10px 0;
+		    padding: 5px;
+		    background: #f8f9fa;
+		    border-radius: 4px;
+		    border: 1px solid #ddd;
+		}
+
+		.student-entry {
+		    display: flex;
+		    justify-content: space-between;
+		    align-items: center;
+		    padding: 8px 12px;
+		    margin: 2px 0;
+		    background: white;
+		    border-radius: 4px;
+		}
+
+		.student-entry:hover {
+		    background: #f0f0f0;
+		}
+
+		.delete-student {
+		    color: #dc3545;
+		    background: none;
+		    border: none;
+		    cursor: pointer;
+		    padding: 0 8px;
+		    font-size: 18px;
+		    font-weight: bold;
+		    border-radius: 4px;
+		}
+
+		.delete-student:hover {
+		    background-color: #dc3545;
+		    color: white;
+		}
+
+		.add-student-form {
+		    display: block;
+		    gap: 5px;
+		    margin: 10px 0;
+		}
+
+		.add-student-form input {
+		    flex-grow: 1;
+		    padding: 8px 12px;
+		    border: 1px solid #ddd;
+		    border-radius: 4px;
+		    font-size: 14px;
+		}
+
+		.add-student-form input:focus {
+		    outline: none;
+		    border-color: #007AFF;
+		    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+		}
+		
+		.toggle-container {
+		    display: flex;
+		    align-items: center;
+		    gap: 10px;
+		    margin: 10px 0;
+		}
+
+		.toggle-label {
+		    position: relative;
+		    display: inline-block;
+		    width: 40px;
+		    height: 22px;
+		}
+
+		.toggle-label input {
+		    opacity: 0;
+		    width: 0;
+		    height: 0;
+		}
+
+		.toggle-slider {
+		    position: absolute;
+		    cursor: pointer;
+		    top: 0;
+		    left: 0;
+		    right: 0;
+		    bottom: 0;
+		    background-color: #ccc;
+		    transition: 0.3s;
+		    border-radius: 22px;
+		}
+
+		.toggle-slider:before {
+		    position: absolute;
+		    content: "";
+		    height: 16px;
+		    width: 16px;
+		    left: 3px;
+		    bottom: 3px;
+		    background-color: white;
+		    transition: 0.3s;
+		    border-radius: 50%;
+		}
+
+		.toggle-label input:checked + .toggle-slider {
+		    background-color: #007AFF;
+		}
+
+		.toggle-label input:checked + .toggle-slider:before {
+		    transform: translateX(18px);
+		}
+		
+		
         @media (max-width: 768px) {
             .student-grid {
                 grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -158,7 +325,8 @@
                 <option value="">Klasse auswählen...</option>
             </select>
             <button class="btn" onclick="showNewClassDialog()">Neue Klasse</button>
-            <button class="btn" id="deleteClassButton" onclick="deleteCurrentClass()" style="display: none;">Klasse löschen</button>
+			<button class="btn" id="editStudentsButton" onclick="showEditStudentsDialog()" style="display: none;">Bearbeiten</button>
+            <button class="btn" id="deleteClassButton" onclick="deleteCurrentClass()" style="display: none;">Löschen</button>
         </div>
 
         <div id="newClassDialog" class="hidden">
@@ -168,15 +336,42 @@
             <button class="btn" onclick="createNewClass()">Erstellen</button>
             <button class="btn" onclick="hideNewClassDialog()">Abbrechen</button>
         </div>
-
+		
+		<div id="editStudentsDialog" class="hidden">
+		    <h3>Hinzufügen</h3>
+		    <div class="add-student-form">
+		        <input type="text" id="newStudentName" placeholder="Name hinzufügen">
+		        <button class="btn" onclick="addStudent()">Hinzufügen</button>
+		    </div>
+		    <h3>Löschen</h3>
+		    <div class="student-list" id="studentList">
+		        <!-- Wird dynamisch gefüllt -->
+		    </div>
+		    <button class="btn" onclick="hideEditStudentsDialog()">Fertig</button>
+		</div>
+		
         <div id="controlPanel" class="control-panel hidden">
-            <button class="btn" id="toggleStatsBtn" onclick="toggleStats()">Statistik anzeigen</button>
+			<div class="toggle-container">
+			    <label class="toggle-label">
+			        <input type="checkbox" id="toggleStats" onchange="toggleStats()" />
+			        <span class="toggle-slider"></span>
+			    </label>
+			    <span id="toggleStatsText">Statistik anzeigen</span>
+			</div>
         </div>
 
-        <div id="studentGrid" class="student-grid"></div>
-        	<button id="finishButton" class="btn complete-btn" onclick="finishCurrentSession()">Fertig</button>
-        	<button id="resetStatsButton" class="btn reset-btn hidden" onclick="resetStats()">Klasse zurücksetzen</button>
+    	<div id="studentGrid" class="student-grid"></div>
+    	<div>
+			<button id="finishButton" class="btn complete-btn" onclick="finishCurrentSession()">Fertig</button>
+    		<button id="resetStatsButton" class="btn reset-btn hidden" onclick="resetStats()">Klasse zurücksetzen</button>
+		</div>
+		<div>
+			<button class="btn" onclick="downloadBackup()">Backup</button>
+			<input type="file" id="uploadInput" style="display:none" onchange="uploadBackup(event)">
+			<button class="btn" onclick="document.getElementById('uploadInput').click()">Wiederherstellen</button>
+		</div>
     </div>
+			
 
     <script>
         let state = {
@@ -215,6 +410,9 @@
 
             const deleteButton = document.getElementById('deleteClassButton');
             deleteButton.style.display = state.currentClass ? 'inline-block' : 'none';
+			
+			const editButton = document.getElementById('editStudentsButton');
+			editButton.style.display = state.currentClass ? 'inline-block' : 'none';
             
             const resetButton = document.getElementById('resetStatsButton');
             resetButton.classList.toggle('hidden', !state.currentClass);
@@ -225,22 +423,20 @@
             const controlPanel = document.getElementById('controlPanel');
             controlPanel.classList.toggle('hidden', !state.currentClass);
 
-            updateStatsButtonText();
+            document.getElementById("toggleStats").checked = state.showStats;
         }
 
-        function toggleStats() {
-            state.showStats = !state.showStats;
-            saveState();
-            updateStudentGrid();
-            updateStatsButtonText();
-        }
+		function toggleStats() {
+		    state.showStats = !state.showStats;
+		    document.getElementById("toggleStats").checked = state.showStats;
+		    saveState();
+		    updateStudentGrid();
+		}
 
-        function updateStatsButtonText() {
-            const btn = document.getElementById('toggleStatsBtn');
-            if (btn) {
-                btn.textContent = state.showStats ? 'Statistik ausblenden' : 'Statistik anzeigen';
-            }
-        }
+		// Beim Laden des Speichers den Schalter entsprechend setzen
+		document.addEventListener("DOMContentLoaded", () => {
+		    document.getElementById("toggleStats").checked = state.showStats;
+		});
 
         function finishCurrentSession() {
             if (!state.currentClass) return;
@@ -429,6 +625,133 @@
             saveState();
             updateStudentGrid();
         }
+		
+		function showEditStudentsDialog() {
+		    document.getElementById('editStudentsDialog').classList.remove('hidden');
+		    updateStudentList();
+		}
+
+		function hideEditStudentsDialog() {
+		    document.getElementById('editStudentsDialog').classList.add('hidden');
+		}
+
+		function updateStudentList() {
+		    if (!state.currentClass) return;
+
+		    const studentList = document.getElementById('studentList');
+		    studentList.innerHTML = '';
+
+		    state.classes[state.currentClass].students
+		        .sort((a, b) => a.localeCompare(b, undefined, {sensitivity: 'base'}))
+		        .forEach(student => {
+		            const entry = document.createElement('div');
+		            entry.className = 'student-entry';
+
+		            const name = document.createElement('span');
+		            name.textContent = student;
+
+		            const deleteButton = document.createElement('button');
+		            deleteButton.className = 'delete-student';
+		            deleteButton.textContent = '×';
+		            deleteButton.onclick = () => removeStudent(student);
+
+		            entry.appendChild(name);
+		            entry.appendChild(deleteButton);
+		            studentList.appendChild(entry);
+		        });
+		}
+
+		function addStudent() {
+		    if (!state.currentClass) return;
+
+		    const input = document.getElementById('newStudentName');
+		    const studentName = input.value.trim();
+
+		    if (!studentName) {
+		        alert('Bitte geben Sie einen Namen ein.');
+		        return;
+		    }
+
+		    if (state.classes[state.currentClass].students.includes(studentName)) {
+		        alert('Dieser Schüler ist bereits in der Klasse.');
+		        return;
+		    }
+
+		    state.classes[state.currentClass].students.push(studentName);
+		    state.classes[state.currentClass].students.sort((a, b) => 
+		        a.localeCompare(b, undefined, {sensitivity: 'base'})
+		    );
+
+		    saveState();
+		    updateStudentList();
+			updateStudentGrid();
+		    input.value = '';
+		}
+
+		function removeStudent(studentName) {
+		    if (!state.currentClass) return;
+
+		    if (confirm(`Möchten Sie ${studentName} wirklich aus der Klasse entfernen?`)) {
+		        const index = state.classes[state.currentClass].students.indexOf(studentName);
+		        if (index > -1) {
+		            state.classes[state.currentClass].students.splice(index, 1);
+		            saveState();
+		            updateStudentList();
+					updateStudentGrid();
+		        }
+		    }
+		}
+		
+		
+		function downloadBackup() {
+		    const data = localStorage.getItem('participationAppState'); // Holen der gespeicherten Daten
+		    if (!data) {
+		        alert("Keine Daten vorhanden, die heruntergeladen werden können.");
+		        return;
+		    }
+
+		    const blob = new Blob([data], { type: 'application/json' }); // JSON-Daten in Blob umwandeln
+		    const url = URL.createObjectURL(blob);
+
+		    const link = document.createElement('a');
+		    link.href = url;
+		    link.download = 'backup.json'; // Dateiname für den Download
+		    link.click();
+
+		    URL.revokeObjectURL(url); // Speicher freigeben
+		}
+		function uploadBackup(event) {
+		    const file = event.target.files[0]; // Hochgeladene Datei abrufen
+		    if (!file) {
+		        alert("Keine Datei ausgewählt.");
+		        return;
+		    }
+
+		    const reader = new FileReader();
+		    reader.onload = function(event) {
+		        try {
+		            const data = JSON.parse(event.target.result); // JSON-Daten parsen
+		            localStorage.setItem('participationAppState', JSON.stringify(data)); // In localStorage speichern
+		            alert("Daten erfolgreich hochgeladen.");
+		            loadState(); // Geladene Daten in der App anwenden
+            
+		            if (state.currentClass) {
+		                document.getElementById('classSelect').value = state.currentClass;
+		            }
+
+		            updateClassSelect(); // Dropdown-Liste der Klassen aktualisieren
+		            updateStudentGrid(); // Schülerliste aktualisieren
+		        } catch (e) {
+		            alert("Fehler beim Verarbeiten der Datei. Stellen Sie sicher, dass es sich um eine gültige Backup-Datei handelt.");
+		        }
+		    };
+
+		    reader.readAsText(file); // Datei als Text einlesen
+		}
+		
+		
+		
+		
 
         // Check for day change every minute
         setInterval(() => {
