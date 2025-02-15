@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gruppeneinteilung</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+	<link rel="icon" type="image/png" href="favicon/favicon-96x96.png" sizes="96x96" />
+	<link rel="icon" type="image/svg+xml" href="favicon/favicon.svg" />
+	<link rel="shortcut icon" href="favicon/favicon.ico" />
+	<link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png" />
+	<link rel="manifest" href="favicon/site.webmanifest" />
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -36,6 +40,12 @@
             background-color: #0056b3;
             border-color: #0056b3;
 			color: white;
+        }
+        .reset-btn {
+            background-color: #dc3545;
+        }
+        .reset-btn:hover {
+            background-color: #c82333;
         }
         textarea {
             width: 100%;
@@ -70,15 +80,16 @@
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
-            margin: 20px 0;
+            margin: 20px 0 0 0;
             min-height: 50px;
             padding: 10px;
             background: #f8f9fa;
             border-radius: 4px;
         }
+		
 		.students-pool-container {
 		    position: relative;
-		    margin: 20px 0;
+		    margin: 20px 0 0 0;
 		}
         .student-item {
             background: #e9ecef;
@@ -89,6 +100,13 @@
             user-select: none;
             margin: 3px;
         }
+		.inactive-student {
+		    text-decoration: line-through;
+		    opacity: 0.5;
+		    pointer-events: auto;
+		    cursor: pointer;
+		}
+		
         .groups-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -200,6 +218,124 @@
 		.modal-buttons {
 		    margin-bottom: 20px;
 		}
+		
+		.info-container {
+			font-size: 12px;
+			color: #bbb;
+			text-align:right;
+		    position: relative;
+		    margin-bottom: 15px;
+		    margin-top: 5px;
+		}
+		
+		#editStudentsDialog,#newClassDialog {
+		    background: white;
+		    padding: 20px;
+		    border-radius: 4px;
+		    border: 1px solid #ddd;
+		    margin: 10px 0;
+			max-width:400px;
+		}
+
+
+		#newClassDialog h3,#editStudentsDialog h3 {
+		    margin: 0 0 15px 0;
+		    font-size: 18px;
+		    color: #333;
+		}
+
+		#newClassDialog input[type="text"],
+		#newClassDialog textarea {
+		    box-sizing: border-box;
+		    width: 100%;
+		    padding: 8px 12px;
+		    border: 1px solid #ddd;
+		    border-radius: 4px;
+		    font-size: 14px;
+		    margin-bottom: 10px;
+		    font-family: inherit;
+		}
+		
+		#newClassDialog input[type="text"]:focus,
+		#newClassDialog textarea:focus {
+		    outline: none;
+		    border-color: #007AFF;
+		    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+		}
+
+		#newClassDialog textarea {
+		    resize: vertical;
+		    min-height: 100px;
+		    max-height: 250px;
+		    margin: 10px 0;
+		    background: #f8f9fa;
+		}
+
+		#newClassDialog .btn {
+		    margin-right: 5px;
+		    margin-top: 5px;
+		}
+
+		.student-list {
+		    max-height: 250px;
+		    overflow-y: auto;
+		    margin: 10px 0;
+		    padding: 5px;
+		    background: #f8f9fa;
+		    border-radius: 4px;
+		    border: 1px solid #ddd;
+		}
+
+		.student-entry {
+		    display: flex;
+		    justify-content: space-between;
+		    align-items: center;
+		    padding: 8px 12px;
+		    margin: 2px 0;
+		    background: white;
+		    border-radius: 4px;
+		}
+
+		.student-entry:hover {
+		    background: #f0f0f0;
+		}
+
+		.delete-student {
+		    color: #dc3545;
+		    background: none;
+		    border: none;
+		    cursor: pointer;
+		    padding: 0 8px;
+		    font-size: 18px;
+		    font-weight: bold;
+		    border-radius: 4px;
+		}
+
+		.delete-student:hover {
+		    background-color: #dc3545;
+		    color: white;
+		}
+
+		.add-student-form {
+		    display: block;
+		    gap: 5px;
+		    margin: 10px 0;
+		}
+
+		.add-student-form input {
+		    flex-grow: 1;
+		    padding: 8px 12px;
+		    border: 1px solid #ddd;
+		    border-radius: 4px;
+		    font-size: 14px;
+		}
+
+		.add-student-form input:focus {
+		    outline: none;
+		    border-color: #007AFF;
+		    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+		}
+		
     </style>
 </head>
 <body>
@@ -209,7 +345,8 @@
                 <option value="">Klasse auswählen...</option>
             </select>
             <button class="btn" onclick="showNewClassDialog()">Neue Klasse</button>
-            <button class="btn" id="deleteClassButton" onclick="deleteCurrentClass()" style="display: none;">Klasse löschen</button>
+			<button class="btn" id="editStudentsButton" onclick="showEditStudentsDialog()" style="display: none;">Bearbeiten</button>
+            <button class="btn" id="deleteClassButton" onclick="deleteCurrentClass()" style="display: none;">Löschen</button>
         </div>
 
         <div id="newClassDialog" class="hidden">
@@ -219,11 +356,29 @@
             <button class="btn" onclick="createNewClass()">Erstellen</button>
             <button class="btn" onclick="hideNewClassDialog()">Abbrechen</button>
         </div>
+		
+		<div id="editStudentsDialog" class="hidden">
+            <h3>Hinzufügen</h3>
+            <div class="add-student-form">
+                <input type="text" id="newStudentName" placeholder="Name hinzufügen">
+                <button class="btn" onclick="addStudent()">Hinzufügen</button>
+            </div>
+			<h3>Löschen</h3>
+            <div class="student-list" id="studentList">
+                <!-- Wird dynamisch gefüllt -->
+            </div>
+            <button class="btn" onclick="hideEditStudentsDialog()">Fertig</button>
+        </div>
+		
+
 
 		<div id="groupManagement" class="hidden">
 		    <div class="students-pool-container">
 		        <div class="students-pool" id="studentsPool"></div>
 		    </div>
+			<div class="info-container">
+			        Ziehe Namen in Gruppen für manuelle Zuordnung. Klicke zum Deaktivieren eines Namens.
+			</div>
 			<div>
 		        <button class="btn" onclick="selectRandomStudent()">Zufälligen Namen auswählen</button>
 				<button class="btn" onclick="showRandomList()">Zufällige Namensliste anzeigen</button>
@@ -240,11 +395,12 @@
 		        </div>
 		        <div>
 					<button class="btn" onclick="randomizeGroups()">Gruppen zufällig füllen</button>
-			        <button class="btn" onclick="resetGroups()">Gruppen zurücksetzen</button>
 				</div>
 		    </div>
     
 		    <div class="groups-container" id="groupsContainer"></div>
+			<button class="btn copy-btn" id="copyButton" onclick="copyGroupsToClipboard()">Als Text kopieren</button>
+			<button class="btn reset-btn" onclick="resetGroups()">Zurücksetzen</button>
 		</div>
 		
 		<div id="randomNameModal" class="modal">
@@ -296,7 +452,10 @@
             const select = document.getElementById('classSelect');
             select.innerHTML = '<option value="">Klasse auswählen...</option>';
             
-            const sortedClasses = Object.keys(state.classes).sort();
+			const sortedClasses = Object.keys(state.classes).sort((a, b) => 
+			    a.localeCompare(b, undefined, {sensitivity: 'base'})
+			);
+            
             
             sortedClasses.forEach(className => {
                 const option = document.createElement('option');
@@ -310,6 +469,8 @@
             
             const deleteButton = document.getElementById('deleteClassButton');
             deleteButton.style.display = state.currentClass ? 'inline-block' : 'none';
+            const editButton = document.getElementById('editStudentsButton');
+            editButton.style.display = state.currentClass ? 'inline-block' : 'none';
         }
 
         function showNewClassDialog() {
@@ -331,10 +492,11 @@
                 return;
             }
 
-            const students = studentsText.split('\n')
-                .map(s => s.trim())
-                .filter(s => s.length > 0)
-                .sort();
+			const students = studentsText.split('\n')
+			    .map(s => s.trim())
+			    .filter(s => s.length > 0)
+			    .sort((a, b) => a.localeCompare(b, undefined, {sensitivity: 'base'}));
+            
 
             if (students.length < 2) {
                 alert('Bitte geben Sie mindestens zwei Schüler ein.');
@@ -410,32 +572,63 @@
             initializeDragAndDrop();
         }
 
-        function resetGroups() {
-            if (confirm('Möchten Sie alle Gruppen zurücksetzen?')) {
-                updateGroups('count');
-            }
-        }
+		function resetGroups() {
+		    if (!state.currentClass) return;
 
-        function updateStudentsPool() {
-            if (!state.currentClass) return;
+		    if (confirm('Möchten Sie alle Gruppen und deaktivierten Schüler zurücksetzen?')) {
+		        // Gruppen zurücksetzen
+		        updateGroups('count');
 
-            const pool = document.getElementById('studentsPool');
-            pool.innerHTML = '';
-            
-            const assignedStudents = new Set();
-            document.querySelectorAll('.group-content .student-item').forEach(item => {
-                assignedStudents.add(item.textContent);
-            });
+		        // Deaktivierte Schüler zurücksetzen
+		        state.classes[state.currentClass].inactiveStudents = [];
 
-            state.classes[state.currentClass].students
-                .filter(student => !assignedStudents.has(student))
-                .forEach(student => {
-                    const item = document.createElement('div');
-                    item.className = 'student-item';
-                    item.textContent = student;
-                    pool.appendChild(item);
-                });
-        }
+		        saveState();
+		        updateStudentsPool();
+		    }
+		}
+        
+
+		function updateStudentsPool() {
+		    if (!state.currentClass) return;
+
+		    const pool = document.getElementById('studentsPool');
+		    pool.innerHTML = '';
+
+		    const assignedStudents = new Set();
+		    document.querySelectorAll('.group-content .student-item').forEach(item => {
+		        assignedStudents.add(item.textContent);
+		    });
+
+		    state.classes[state.currentClass].students.forEach(student => {
+		        if (!assignedStudents.has(student)) {
+		            const item = document.createElement('div');
+		            item.className = 'student-item';
+		            item.textContent = student;
+		            item.onclick = () => toggleStudentActive(student, item);
+		            if (state.classes[state.currentClass].inactiveStudents?.includes(student)) {
+		                item.classList.add('inactive-student');
+		            }
+		            pool.appendChild(item);
+		        }
+		    });
+		}
+		function toggleStudentActive(student, element) {
+		    if (!state.classes[state.currentClass].inactiveStudents) {
+		        state.classes[state.currentClass].inactiveStudents = [];
+		    }
+
+		    const index = state.classes[state.currentClass].inactiveStudents.indexOf(student);
+		    if (index === -1) {
+		        state.classes[state.currentClass].inactiveStudents.push(student);
+		        element.classList.add('inactive-student');
+		    } else {
+		        state.classes[state.currentClass].inactiveStudents.splice(index, 1);
+		        element.classList.remove('inactive-student');
+		    }
+
+		    saveState();
+		}
+        
 
         function initializeDragAndDrop() {
             new Sortable(document.getElementById('studentsPool'), {
@@ -458,68 +651,67 @@
         }
 
 		function randomizeGroups() {
+		    if (!state.currentClass) return;
+
 		    const groups = Array.from(document.querySelectorAll('.group-content'));
 		    const totalGroups = groups.length;
 		    if (totalGroups === 0) return;
 
-		    // Sammle alle nicht zugeordneten Schüler
-		    const unassignedStudents = Array.from(document.getElementById('studentsPool').children)
-		        .map(el => el.textContent);
-    
-		    if (unassignedStudents.length === 0) return;
+		    // Nur aktive Schüler verwenden
+		    const activeStudents = state.classes[state.currentClass].students.filter(
+		        student => !state.classes[state.currentClass].inactiveStudents?.includes(student)
+		    );
 
-		    // Mische die nicht zugeordneten Schüler
-		    for (let i = unassignedStudents.length - 1; i > 0; i--) {
-		        const j = Math.floor(Math.random() * (i + 1));
-		        [unassignedStudents[i], unassignedStudents[j]] = 
-		        [unassignedStudents[j], unassignedStudents[i]];
-		    }
+		    if (activeStudents.length === 0) return;
 
-		    // Berechne die ideale Verteilung der Gruppengrößen
-		    const totalStudents = state.classes[state.currentClass].students.length;
-		    const minStudentsPerGroup = Math.floor(totalStudents / totalGroups);
-		    const extraStudents = totalStudents % totalGroups;
+		    // Mische die aktiven Schüler
+		    shuffleArray(activeStudents);
+
+		    // Berechne die ideale Gruppengröße basierend auf den aktiven Schülern
+		    const totalActiveStudents = activeStudents.length;
+		    const minStudentsPerGroup = Math.floor(totalActiveStudents / totalGroups);
+		    const extraStudents = totalActiveStudents % totalGroups;
 
 		    // Erstelle ein Array mit den Zielgrößen für jede Gruppe
 		    const targetSizes = Array(totalGroups).fill(minStudentsPerGroup);
-    
-		    // Verteile die übrigen Schüler möglichst gleichmäßig
-		    // Beispiel: Bei 7 Schülern und 3 Gruppen wird es [3, 2, 2] statt [3, 3, 1]
 		    for (let i = 0; i < extraStudents; i++) {
-		        targetSizes[Math.floor(i * (totalGroups / extraStudents))]++;
+		        targetSizes[i]++; // Verteile Extra-Schüler auf die ersten Gruppen
 		    }
 
-		    // Berechne für jede Gruppe, wie viele Schüler noch hinzugefügt werden müssen
-		    const currentSizes = groups.map(group => group.children.length);
-		    const studentsNeeded = targetSizes.map((target, i) => target - currentSizes[i]);
+		    // Entferne alle aktuellen Schüler aus den Gruppen
+		    groups.forEach(group => group.innerHTML = '');
 
-		    // Verteile die restlichen Schüler entsprechend der berechneten Zielgrößen
-		    let currentStudentIndex = 0;
+		    // Fülle die Gruppen mit den aktiven Schülern
+		    let studentIndex = 0;
 		    groups.forEach((group, groupIndex) => {
-		        const needed = studentsNeeded[groupIndex];
-		        for (let i = 0; i < needed && currentStudentIndex < unassignedStudents.length; i++) {
+		        for (let i = 0; i < targetSizes[groupIndex] && studentIndex < totalActiveStudents; i++) {
 		            const item = document.createElement('div');
 		            item.className = 'student-item';
-		            item.textContent = unassignedStudents[currentStudentIndex++];
+		            item.textContent = activeStudents[studentIndex++];
 		            group.appendChild(item);
 		        }
 		    });
 
 		    updateStudentsPool();
 		}
+		
 		function selectRandomStudent() {
 		    if (!state.currentClass) return;
-    
-		    const students = state.classes[state.currentClass].students;
-		    if (students.length === 0) return;
-    
-		    const randomStudent = students[Math.floor(Math.random() * students.length)];
+
+		    const activeStudents = state.classes[state.currentClass].students.filter(
+		        student => !state.classes[state.currentClass].inactiveStudents?.includes(student)
+		    );
+
+		    if (activeStudents.length === 0) return;
+
+		    const randomStudent = activeStudents[Math.floor(Math.random() * activeStudents.length)];
 		    const modal = document.getElementById('randomNameModal');
 		    const nameDisplay = document.getElementById('randomNameDisplay');
-    
+
 		    nameDisplay.textContent = randomStudent;
 		    modal.style.display = 'flex';
 		}
+		
 		
 		function shuffleArray(array) {
 		    for (let i = array.length - 1; i > 0; i--) {
@@ -531,17 +723,23 @@
 
 		function showRandomList() {
 		    if (!state.currentClass) return;
-    
-		    const students = [...state.classes[state.currentClass].students];
-		    const shuffledStudents = shuffleArray(students);
-    
+
+		    const activeStudents = state.classes[state.currentClass].students.filter(
+		        student => !state.classes[state.currentClass].inactiveStudents?.includes(student)
+		    );
+
+		    if (activeStudents.length === 0) return;
+
+		    const shuffledStudents = shuffleArray(activeStudents);
+
 		    const modal = document.getElementById('randomListModal');
 		    const listDisplay = document.getElementById('randomListDisplay');
-    
+
 		    listDisplay.textContent = shuffledStudents.join('\n');
 		    modal.style.display = 'flex';
 		}
-
+		
+		// Zufällige Liste in Zwischenablage kopieren
 		function copyToClipboard() {
 		    const listDisplay = document.getElementById('randomListDisplay');
 		    const copyButton = document.getElementById('copyButton');
@@ -560,6 +758,50 @@
 		        }, 2000);
 		    });
 		}
+		
+		// Gruppen in Zwischenablage kopieren
+		function copyGroupsToClipboard() {
+		    if (!state.currentClass) return;
+
+		    let plainText = "";
+		    let htmlText = "<html><body>";
+
+		    const groups = document.querySelectorAll('.group');
+		    groups.forEach((group, index) => {
+		        const groupTitle = `<b>Gruppe ${index + 1}</b>`;
+		        const students = Array.from(group.querySelectorAll('.student-item'))
+		            .map(student => student.textContent)
+		            .join("\n"); // Plaintext-Zeilenumbruch
+
+		        // Für Notepad oder andere reine Text-Editoren
+		        plainText += `Gruppe ${index + 1}\n${students}\n\n`;
+
+		        // HTML-Formatierung für Word
+		        htmlText += `${groupTitle}<br>${students.replace(/\n/g, '<br>')}<br><br>`; // HTML-Zeilenumbruch
+		    });
+
+		    htmlText += "</body></html>";
+
+		    // Clipboard-Item mit HTML und Plaintext (Fallback)
+		    const clipboardItem = new ClipboardItem({
+		        "text/html": new Blob([htmlText], { type: "text/html" }),
+		        "text/plain": new Blob([plainText], { type: "text/plain" })
+		    });
+
+		    navigator.clipboard.write([clipboardItem]).then(() => {
+		        const button = document.getElementById("copyButton");
+		        const originalText = button.textContent;
+		        button.textContent = "✓ Kopiert!";
+		        setTimeout(() => {
+		            button.textContent = originalText;
+		        }, 2000);
+		    }).catch(err => {
+		        console.error("Fehler beim Kopieren:", err);
+		    });
+		}
+		
+		
+		
 
 		// Modal schließen wenn auf X oder außerhalb geklickt wird
 		document.addEventListener('DOMContentLoaded', () => {
@@ -593,6 +835,91 @@
 		        }
 		    }
 		});
+		
+		function showEditStudentsDialog() {
+            document.getElementById('editStudentsDialog').classList.remove('hidden');
+            updateStudentList();
+        }
+
+        function hideEditStudentsDialog() {
+            document.getElementById('editStudentsDialog').classList.add('hidden');
+        }
+
+        function updateStudentList() {
+            if (!state.currentClass) return;
+
+            const studentList = document.getElementById('studentList');
+            studentList.innerHTML = '';
+
+			state.classes[state.currentClass].students
+			    .sort((a, b) => a.localeCompare(b, undefined, {sensitivity: 'base'}))
+			    .forEach(student => {
+                const entry = document.createElement('div');
+                entry.className = 'student-entry';
+    
+                const name = document.createElement('span');
+                name.textContent = student;
+    
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete-student';
+                deleteButton.textContent = '×';
+                deleteButton.onclick = () => removeStudent(student);
+    
+                entry.appendChild(name);
+                entry.appendChild(deleteButton);
+                studentList.appendChild(entry);
+            });
+        }
+
+        function addStudent() {
+            if (!state.currentClass) return;
+
+            const input = document.getElementById('newStudentName');
+            const studentName = input.value.trim();
+
+            if (!studentName) {
+                alert('Bitte geben Sie einen Namen ein.');
+                return;
+            }
+
+            if (state.classes[state.currentClass].students.includes(studentName)) {
+                alert('Dieser Schüler ist bereits in der Klasse.');
+                return;
+            }
+
+			state.classes[state.currentClass].students.push(studentName);
+			state.classes[state.currentClass].students.sort((a, b) => 
+			    a.localeCompare(b, undefined, {sensitivity: 'base'})
+			);
+
+            saveState();
+            updateStudentList();
+            updateStudentsPool();
+            input.value = '';
+        }
+
+        function removeStudent(studentName) {
+            if (!state.currentClass) return;
+
+            if (confirm(`Möchten Sie ${studentName} wirklich aus der Klasse entfernen?`)) {
+                const index = state.classes[state.currentClass].students.indexOf(studentName);
+                if (index > -1) {
+                    state.classes[state.currentClass].students.splice(index, 1);
+        
+                    // Entferne auch aus inactiveStudents, falls vorhanden
+                    const inactiveIndex = state.classes[state.currentClass].inactiveStudents?.indexOf(studentName);
+                    if (inactiveIndex > -1) {
+                        state.classes[state.currentClass].inactiveStudents.splice(inactiveIndex, 1);
+                    }
+        
+                    saveState();
+                    updateStudentList();
+                    updateStudentsPool();
+                    updateGroups('count');
+                }
+            }
+        }
+		
 		
     </script>
 </body>
