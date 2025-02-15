@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Schüler-Ranking</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+	<link rel="icon" type="image/png" href="favicon/favicon-96x96.png" sizes="96x96" />
+	<link rel="icon" type="image/svg+xml" href="favicon/favicon.svg" />
+	<link rel="shortcut icon" href="favicon/favicon.ico" />
+	<link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png" />
+	<link rel="manifest" href="favicon/site.webmanifest" />
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -34,6 +38,13 @@
         }
         .btn:hover {
             background-color: #0056b3;
+        }
+        .reset-btn {
+            background-color: #dc3545;
+            margin-top: 20px;
+        }
+        .reset-btn:hover {
+            background-color: #c82333;
         }
         .comparison-container {
             display: flex;
@@ -121,6 +132,114 @@
 		    box-shadow: 0 0 5px rgba(0, 87, 179, 0.5); /* Leuchtender Effekt bei Fokus */
 		}
 		
+		#editStudentsDialog,#newClassDialog {
+		    background: white;
+		    padding: 20px;
+		    border-radius: 4px;
+		    border: 1px solid #ddd;
+		    margin: 10px 0;
+			max-width:400px;
+		}
+
+
+		#newClassDialog h3,#editStudentsDialog h3 {
+		    margin: 0 0 15px 0;
+		    font-size: 18px;
+		    color: #333;
+		}
+
+		#newClassDialog input[type="text"],
+		#newClassDialog textarea {
+		    box-sizing: border-box;
+		    width: 100%;
+		    padding: 8px 12px;
+		    border: 1px solid #ddd;
+		    border-radius: 4px;
+		    font-size: 14px;
+		    margin-bottom: 10px;
+		    font-family: inherit;
+		}
+		
+		#newClassDialog input[type="text"]:focus,
+		#newClassDialog textarea:focus {
+		    outline: none;
+		    border-color: #007AFF;
+		    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+		}
+
+		#newClassDialog textarea {
+		    resize: vertical;
+		    min-height: 100px;
+		    max-height: 250px;
+		    margin: 10px 0;
+		    background: #f8f9fa;
+		}
+
+		#newClassDialog .btn {
+		    margin-right: 5px;
+		    margin-top: 5px;
+		}
+
+		.student-list {
+		    max-height: 250px;
+		    overflow-y: auto;
+		    margin: 10px 0;
+		    padding: 5px;
+		    background: #f8f9fa;
+		    border-radius: 4px;
+		    border: 1px solid #ddd;
+		}
+
+		.student-entry {
+		    display: flex;
+		    justify-content: space-between;
+		    align-items: center;
+		    padding: 8px 12px;
+		    margin: 2px 0;
+		    background: white;
+		    border-radius: 4px;
+		}
+
+		.student-entry:hover {
+		    background: #f0f0f0;
+		}
+
+		.delete-student {
+		    color: #dc3545;
+		    background: none;
+		    border: none;
+		    cursor: pointer;
+		    padding: 0 8px;
+		    font-size: 18px;
+		    font-weight: bold;
+		    border-radius: 4px;
+		}
+
+		.delete-student:hover {
+		    background-color: #dc3545;
+		    color: white;
+		}
+
+		.add-student-form {
+		    display: block;
+		    gap: 5px;
+		    margin: 10px 0;
+		}
+
+		.add-student-form input {
+		    flex-grow: 1;
+		    padding: 8px 12px;
+		    border: 1px solid #ddd;
+		    border-radius: 4px;
+		    font-size: 14px;
+		}
+
+		.add-student-form input:focus {
+		    outline: none;
+		    border-color: #007AFF;
+		    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+		}
+		
 	    /* Unscharfer Zustand */
 	    .blurred {
 	       filter: blur(10px);
@@ -176,19 +295,6 @@
 		     }
 		 }
 		 
-		 .delete-student {
-		     color: #ddd;
-		     background: none;
-		     border: none;
-		     cursor: pointer;
-		     padding: 0 5px;
-		     font-size: 14px;
-		 }
-
-		 .delete-student:hover {
-		     color: #ff4444;
-		 }
-		 
     </style>
 </head>
 <body>
@@ -199,7 +305,8 @@
                 <option value="">Klasse auswählen...</option>
             </select>
             <button class="btn" onclick="showNewClassDialog()">Neue Klasse</button>
-            <button class="btn" id="deleteClassButton" onclick="deleteCurrentClass()" style="display: none;">Klasse löschen</button>
+		 	<button class="btn" id="editStudentsButton" onclick="showEditStudentsDialog()" style="display: none;">Bearbeiten</button>
+            <button class="btn" id="deleteClassButton" onclick="deleteCurrentClass()" style="display: none;">Löschen</button>
         </div>
 
         <div id="newClassDialog" class="hidden">
@@ -209,17 +316,20 @@
             <button class="btn" onclick="createNewClass()">Erstellen</button>
             <button class="btn" onclick="hideNewClassDialog()">Abbrechen</button>
         </div>
-
-        <div id="studentManagement" class="hidden">
-            <h2>Schülerverwaltung</h2>
-            <button class="btn" onclick="showAddStudentDialog()">Schüler hinzufügen</button>
-            <div id="addStudentDialog" class="hidden">
-                <textarea id="newStudents" placeholder="Neue Schüler (einer pro Zeile)"></textarea>
-                <button class="btn" onclick="addNewStudents()">Hinzufügen</button>
-                <button class="btn" onclick="hideAddStudentDialog()">Abbrechen</button>
-            </div>
-        </div>
-
+		 
+		<div id="editStudentsDialog" class="hidden">
+		    <h3>Hinzufügen</h3>
+		    <div class="add-student-form">
+		        <input type="text" id="newStudentName" placeholder="Name hinzufügen">
+		        <button class="btn" onclick="addStudent()">Hinzufügen</button>
+		    </div>
+		    <h3>Löschen</h3>
+		    <div class="student-list" id="studentList">
+		        <!-- Wird dynamisch gefüllt -->
+		    </div>
+		    <button class="btn" onclick="hideEditStudentsDialog()">Fertig</button>
+		</div>
+		 
         <div id="comparisonSection" class="hidden">
             <div class="progress">
                 <div>Fortschritt: <span id="progressText">0%</span></div>
@@ -235,8 +345,8 @@
 		<div id="resultSection" class="hidden">
 		    <ul id="rankingList" class="ranking-list">
 		    </ul>
-		    <button class="btn" onclick="resetRanking()">Ranking zurücksetzen</button>
-		    <button class="btn" onclick="showTSV()">CSV kopieren</button>
+		    <button class="btn" onclick="showTSV()">Als Text kopieren</button>
+		    <button class="btn reset-btn" onclick="resetRanking()">Zurücksetzen</button>
 		</div>
 
 		<button class="btn" onclick="downloadBackup()">Backup</button>
@@ -463,60 +573,110 @@
 	            updateUI(); // ergänzt
             }
         }
+		
+		function showEditStudentsDialog() {
+		    document.getElementById('editStudentsDialog').classList.remove('hidden');
+		    updateStudentList();
+		}
 
-        // Schülerverwaltung
-        function showAddStudentDialog() {
-            document.getElementById('addStudentDialog').classList.remove('hidden');
-        }
+		function hideEditStudentsDialog() {
+		    document.getElementById('editStudentsDialog').classList.add('hidden');
+		}
 
-        function hideAddStudentDialog() {
-            document.getElementById('addStudentDialog').classList.add('hidden');
-            document.getElementById('newStudents').value = '';
-        }
+		function updateStudentList() {
+		    if (!state.currentClass) return;
 
-        function addNewStudents() {
-            if (!state.currentClass) return;
+		    const studentList = document.getElementById('studentList');
+		    studentList.innerHTML = '';
 
-            const newStudentsText = document.getElementById('newStudents').value.trim();
-            const newStudents = newStudentsText.split('\n')
-                .map(s => s.trim())
-                .filter(s => s.length > 0);
+		    state.classes[state.currentClass].students
+		        .sort((a, b) => a.localeCompare(b, undefined, {sensitivity: 'base'}))
+		        .forEach(student => {
+		            const entry = document.createElement('div');
+		            entry.className = 'student-entry';
 
-            if (newStudents.length === 0) {
-                alert('Bitte geben Sie mindestens einen Schüler ein.');
-                return;
-            }
+		            const name = document.createElement('span');
+		            name.textContent = student;
 
-            state.classes[state.currentClass].students = [
-                ...state.classes[state.currentClass].students,
-                ...newStudents
-            ];
+		            const deleteButton = document.createElement('button');
+		            deleteButton.className = 'delete-student';
+		            deleteButton.textContent = '×';
+		            deleteButton.onclick = () => removeStudent(student);
 
-            saveState();
-            hideAddStudentDialog();
-            updateUI();
-        }
+		            entry.appendChild(name);
+		            entry.appendChild(deleteButton);
+		            studentList.appendChild(entry);
+		        });
+		}
+
+		function addStudent() {
+		    if (!state.currentClass) return;
+
+		    const input = document.getElementById('newStudentName');
+		    const studentName = input.value.trim();
+
+		    if (!studentName) {
+		        alert('Bitte geben Sie einen Namen ein.');
+		        return;
+		    }
+
+		    if (state.classes[state.currentClass].students.includes(studentName)) {
+		        alert('Dieser Schüler ist bereits in der Klasse.');
+		        return;
+		    }
+
+		    state.classes[state.currentClass].students.push(studentName);
+		    state.classes[state.currentClass].students.sort((a, b) => 
+		        a.localeCompare(b, undefined, {sensitivity: 'base'})
+		    );
+
+		    // Füge ein TrueSkill-Rating für den neuen Schüler hinzu
+		    state.classes[state.currentClass].ratings[studentName] = state.trueSkill.createRating();
+
+		    saveState();
+		    updateStudentList();
+		    updateRankings();  // Aktualisiert die Anzeige der Schüler in der Ranking-Liste
+		    input.value = '';
+		}
+		
+
+		function removeStudent(studentName) {
+		    if (!state.currentClass) return;
+
+		    if (confirm(`Möchten Sie ${studentName} wirklich aus der Klasse entfernen?`)) {
+		        const index = state.classes[state.currentClass].students.indexOf(studentName);
+		        if (index > -1) {
+		            state.classes[state.currentClass].students.splice(index, 1);
+		            delete state.classes[state.currentClass].ratings[studentName]; // TrueSkill Rating entfernen
+		            saveState();
+		            updateStudentList();
+		            updateRankings();
+		        }
+		    }
+		}
+		
 
         // Vergleiche und Ranking
-        function selectClass(className) {
-            const selectedClass = className || document.getElementById('classSelect').value;
-            state.currentClass = selectedClass;
-            saveState();
-            
-            if (selectedClass) {
-                //document.getElementById('studentManagement').classList.remove('hidden');
-                document.getElementById('comparisonSection').classList.remove('hidden');
-                document.getElementById('resultSection').classList.remove('hidden');
-				deleteClassButton.style.display = 'inline-block'
-                updateUI();
-            } else {
-                hideAllSections();
-		        deleteClassButton.style.display = 'none'; // Button ausblenden, wenn keine Klasse ausgewählt ist
-            }
-        }
+		function selectClass(className) {
+		    const selectedClass = className || document.getElementById('classSelect').value;
+		    state.currentClass = selectedClass;
+		    saveState();
+    
+		    if (selectedClass) {
+		        document.getElementById('comparisonSection').classList.remove('hidden');
+		        document.getElementById('resultSection').classList.remove('hidden');
+		        document.getElementById('deleteClassButton').style.display = 'inline-block';
+		        document.getElementById('editStudentsButton').style.display = 'inline-block';
+		        updateUI();
+		    } else {
+		        hideAllSections();
+		        document.getElementById('deleteClassButton').style.display = 'none';
+		        document.getElementById('editStudentsButton').style.display = 'none';
+		    }
+		}
+        
 
         function hideAllSections() {
-            document.getElementById('studentManagement').classList.add('hidden');
             document.getElementById('comparisonSection').classList.add('hidden');
             document.getElementById('resultSection').classList.add('hidden');
         }
@@ -688,9 +848,7 @@
 				const li = document.createElement('li');
 			    li.innerHTML = `
 			        <span>${index + 1}</span>
-					<span>${student}
-				    	<button class="delete-student" onclick="deleteStudent('${student}')" title="Schüler löschen">×</button>
-				    </span>
+					<span>${student}</span>
 			        <span>${rating.mu.toFixed(1)}</span>
 			        <span class="sigma">±${rating.sigma.toFixed(1)}</span>
 			        <span class="drag-handle">⋮⋮</span>
@@ -864,30 +1022,6 @@
 		    };
 
 		    reader.readAsText(file); // Datei als Text einlesen
-		}
-		
-		function deleteStudent(studentName) {
-		    if (!confirm(`Möchten Sie ${studentName} wirklich aus der Klasse entfernen?`)) {
-		        return;
-		    }
-
-		    const classData = state.classes[state.currentClass];
-    
-		    // Schüler aus der Liste entfernen
-		    classData.students = classData.students.filter(s => s !== studentName);
-    
-		    // Rating des Schülers entfernen
-		    delete classData.ratings[studentName];
-    
-		    // Vergleiche mit diesem Schüler entfernen
-		    Object.keys(classData.comparisons).forEach(key => {
-		        if (key.includes(studentName)) {
-		            delete classData.comparisons[key];
-		        }
-		    });
-
-		    saveState();
-		    updateUI();
 		}
 
 		
