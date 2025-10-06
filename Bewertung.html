@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schüler-Bewertung</title>
+    <title>Schüler-Bewertung (IndexedDB)</title>
 	<link rel="icon" type="image/png" href="favicon/favicon-96x96.png" sizes="96x96" />
 	<link rel="icon" type="image/svg+xml" href="favicon/favicon.svg" />
 	<link rel="shortcut icon" href="favicon/favicon.ico" />
@@ -138,7 +138,7 @@
             /*border-top: 1px solid #ddd;
             border-bottom: 1px solid #ddd;*/
         }
-		
+
 		#editStudentsDialog,#newClassDialog {
 		    background: white;
 		    padding: 20px;
@@ -166,7 +166,7 @@
 		    margin-bottom: 10px;
 		    font-family: inherit;
 		}
-		
+
 		#newClassDialog input[type="text"]:focus,
 		#newClassDialog textarea:focus {
 		    outline: none;
@@ -246,7 +246,7 @@
 		    border-color: #007AFF;
 		    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
 		}
-		
+
 		.toggle-container {
 		    display: flex;
 		    align-items: center;
@@ -298,8 +298,8 @@
 		.toggle-label input:checked + .toggle-slider:before {
 		    transform: translateX(18px);
 		}
-		
-		
+
+
         @media (max-width: 768px) {
             .student-grid {
                 grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
@@ -336,7 +336,7 @@
             <button class="btn" onclick="createNewClass()">Erstellen</button>
             <button class="btn" onclick="hideNewClassDialog()">Abbrechen</button>
         </div>
-		
+
 		<div id="editStudentsDialog" class="hidden">
 		    <h3>Hinzufügen</h3>
 		    <div class="add-student-form">
@@ -349,7 +349,7 @@
 		    </div>
 		    <button class="btn" onclick="hideEditStudentsDialog()">Fertig</button>
 		</div>
-		
+
         <div id="controlPanel" class="control-panel hidden">
 			<div class="toggle-container">
 			    <label class="toggle-label">
@@ -371,9 +371,9 @@
 			<button class="btn" onclick="document.getElementById('uploadInput').click()">Wiederherstellen</button>
 		</div>
     </div>
-			
 
     <script>
+        // Application state (kept in memory while app runs)
         let state = {
             classes: {},
             currentClass: null,
@@ -381,19 +381,99 @@
             currentSession: null
         };
 
-        function loadState() {
-            const savedState = localStorage.getItem('participationAppState');
-            if (savedState) {
-                state = JSON.parse(savedState);
+        // ----------------------
+        // IndexedDB helper
+        // ----------------------
+        const DB_NAME = 'participationDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'app';
+
+        function openDb() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(DB_NAME, DB_VERSION);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME);
+                    }
+                };
+                req.onsuccess = (e) => resolve(e.target.result);
+                req.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        async function getStoredState() {
+            try {
+                const db = await openDb();
+                return await new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readonly');
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.get('participationAppState');
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (e) {
+                console.error('getStoredState error', e);
+                return null;
+            }
+        }
+
+        async function putStoredState(value) {
+            try {
+                const db = await openDb();
+                return await new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.put(value, 'participationAppState');
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (e) {
+                console.error('putStoredState error', e);
+            }
+        }
+
+        async function clearStoredState() {
+            try {
+                const db = await openDb();
+                return await new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.delete('participationAppState');
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (e) {
+                console.error('clearStoredState error', e);
+            }
+        }
+
+        // ----------------------
+        // State load/save (now async)
+        // ----------------------
+        async function loadState() {
+            const saved = await getStoredState();
+            if (saved) {
+                try {
+                    // saved might be stored as object already, or as JSON string
+                    state = typeof saved === 'string' ? JSON.parse(saved) : saved;
+                } catch (e) {
+                    console.error('Fehler beim Parsen des gespeicherten Zustands', e);
+                }
             }
             if (!state.currentSession) {
                 state.currentSession = getCurrentDay();
             }
         }
 
-        function saveState() {
-            localStorage.setItem('participationAppState', JSON.stringify(state));
+        async function saveState() {
+            // store plain object (avoid functions)
+            await putStoredState(state);
         }
+
+        // ----------------------
+        // UI / App logic (mostly unchanged; calls to saveState() are async but we don't await everywhere)
+        // ----------------------
 
         function updateClassSelect() {
             const select = document.getElementById('classSelect');
@@ -410,13 +490,13 @@
 
             const deleteButton = document.getElementById('deleteClassButton');
             deleteButton.style.display = state.currentClass ? 'inline-block' : 'none';
-			
+
 			const editButton = document.getElementById('editStudentsButton');
 			editButton.style.display = state.currentClass ? 'inline-block' : 'none';
-            
+
             const resetButton = document.getElementById('resetStatsButton');
             resetButton.classList.toggle('hidden', !state.currentClass);
-			
+
             const finishButton = document.getElementById('finishButton');
             finishButton.classList.toggle('hidden', !state.currentClass);
 
@@ -429,22 +509,19 @@
 		function toggleStats() {
 		    state.showStats = !state.showStats;
 		    document.getElementById("toggleStats").checked = state.showStats;
-		    saveState();
+		    saveState().catch(()=>{});
 		    updateStudentGrid();
 		}
 
-		// Beim Laden des Speichers den Schalter entsprechend setzen
+		// Beim Laden den Schalter entsprechend setzen
 		document.addEventListener("DOMContentLoaded", () => {
 		    document.getElementById("toggleStats").checked = state.showStats;
 		});
 
         function finishCurrentSession() {
             if (!state.currentClass) return;
-            
-            //if (confirm('Möchten Sie die aktuelle Bewertung abschließen und eine neue beginnen?')) {
                 const classData = state.classes[state.currentClass];
-                
-                // Übertrage die täglichen Bewertungen in die Gesamtstatistik
+
                 if (classData.dailyRatings[state.currentSession]) {
                     Object.entries(classData.dailyRatings[state.currentSession]).forEach(([student, rating]) => {
                         if (!classData.ratings[student]) {
@@ -455,17 +532,12 @@
                     });
                 }
 
-                // Setze die täglichen Bewertungen zurück
                 classData.dailyRatings[state.currentSession] = {};
 
-                // Starte eine neue Sitzung
                 state.currentSession = new Date().toISOString();
-                saveState();
+                saveState().catch(()=>{});
                 updateStudentGrid();
-				//}
         }
-		
-        
 
         function showNewClassDialog() {
             document.getElementById('newClassDialog').classList.remove('hidden');
@@ -501,7 +573,7 @@
                 dailyRatings: {}
             };
 
-            saveState();
+            saveState().catch(()=>{});
             selectClass(className);
             updateClassSelect();
             hideNewClassDialog();
@@ -509,11 +581,11 @@
 
         function deleteCurrentClass() {
             if (!state.currentClass) return;
-            
+
             if (confirm(`Möchten Sie die Klasse "${state.currentClass}" wirklich löschen?`)) {
                 delete state.classes[state.currentClass];
                 state.currentClass = null;
-                saveState();
+                saveState().catch(()=>{});
                 updateClassSelect();
                 updateStudentGrid();
             }
@@ -521,7 +593,7 @@
 
         function resetStats() {
             if (!state.currentClass) return;
-            
+
             if (confirm(`Möchten Sie die Statistik für die Klasse "${state.currentClass}" wirklich zurücksetzen?`)) {
                 const classData = state.classes[state.currentClass];
                 classData.ratings = {};
@@ -529,7 +601,7 @@
                 classData.students.forEach(student => {
                     classData.ratings[student] = { ok: 0, good: 0 };
                 });
-                saveState();
+                saveState().catch(()=>{});
                 updateStudentGrid();
             }
         }
@@ -537,7 +609,7 @@
         function selectClass(className) {
             const selectedClass = className || document.getElementById('classSelect').value;
             state.currentClass = selectedClass;
-            saveState();
+            saveState().catch(()=>{});
             updateClassSelect();
             updateStudentGrid();
         }
@@ -546,11 +618,11 @@
             const now = new Date();
             const nextDay = new Date(now);
             nextDay.setHours(4, 0, 0, 0);
-            
+
             if (now >= nextDay) {
                 nextDay.setDate(nextDay.getDate() + 1);
             }
-            
+
             return nextDay.toISOString();
         }
 
@@ -567,7 +639,7 @@
             const currentDay = getCurrentDay();
             if (new Date(state.currentSession) < new Date(currentDay)) {
                 state.currentSession = currentDay;
-                saveState();
+                saveState().catch(()=>{});
             }
 
             // Initialize daily ratings if not exists
@@ -583,7 +655,7 @@
 
                 const button = document.createElement('button');
                 button.className = 'student-btn';
-                
+
                 const currentRating = classData.dailyRatings[state.currentSession][student] || 0;
                 const ratingEmoji = currentRating === 0 ? '' : 
                                   currentRating === 1 ? '🙂' : '🤩';
@@ -603,7 +675,7 @@
                 grid.appendChild(button);
             });
 
-            saveState();
+            saveState().catch(()=>{});
         }
 
         function toggleRating(student) {
@@ -622,10 +694,10 @@
                 classData.dailyRatings[state.currentSession][student] = newRating;
             }
 
-            saveState();
+            saveState().catch(()=>{});
             updateStudentGrid();
         }
-		
+
 		function showEditStudentsDialog() {
 		    document.getElementById('editStudentsDialog').classList.remove('hidden');
 		    updateStudentList();
@@ -682,7 +754,7 @@
 		        a.localeCompare(b, undefined, {sensitivity: 'base'})
 		    );
 
-		    saveState();
+		    saveState().catch(()=>{});
 		    updateStudentList();
 			updateStudentGrid();
 		    input.value = '';
@@ -695,63 +767,59 @@
 		        const index = state.classes[state.currentClass].students.indexOf(studentName);
 		        if (index > -1) {
 		            state.classes[state.currentClass].students.splice(index, 1);
-		            saveState();
+		            saveState().catch(()=>{});
 		            updateStudentList();
 					updateStudentGrid();
 		        }
 		    }
 		}
-		
-		
-		function downloadBackup() {
-		    const data = localStorage.getItem('participationAppState'); // Holen der gespeicherten Daten
-		    if (!data) {
+
+
+		async function downloadBackup() {
+		    const stored = await getStoredState();
+		    if (!stored) {
 		        alert("Keine Daten vorhanden, die heruntergeladen werden können.");
 		        return;
 		    }
-
-		    const blob = new Blob([data], { type: 'application/json' }); // JSON-Daten in Blob umwandeln
+		    const data = typeof stored === 'string' ? stored : JSON.stringify(stored, null, 2);
+		    const blob = new Blob([data], { type: 'application/json' });
 		    const url = URL.createObjectURL(blob);
 
 		    const link = document.createElement('a');
 		    link.href = url;
-		    link.download = 'backup.json'; // Dateiname für den Download
+		    link.download = 'backup.json';
 		    link.click();
 
-		    URL.revokeObjectURL(url); // Speicher freigeben
+		    URL.revokeObjectURL(url);
 		}
+
 		function uploadBackup(event) {
-		    const file = event.target.files[0]; // Hochgeladene Datei abrufen
+		    const file = event.target.files[0];
 		    if (!file) {
 		        alert("Keine Datei ausgewählt.");
 		        return;
 		    }
 
 		    const reader = new FileReader();
-		    reader.onload = function(event) {
+		    reader.onload = async function(event) {
 		        try {
-		            const data = JSON.parse(event.target.result); // JSON-Daten parsen
-		            localStorage.setItem('participationAppState', JSON.stringify(data)); // In localStorage speichern
+		            const data = JSON.parse(event.target.result);
+		            // store object directly
+		            await putStoredState(data);
 		            alert("Daten erfolgreich hochgeladen.");
-		            loadState(); // Geladene Daten in der App anwenden
-            
+		            await loadState();
 		            if (state.currentClass) {
 		                document.getElementById('classSelect').value = state.currentClass;
 		            }
-
-		            updateClassSelect(); // Dropdown-Liste der Klassen aktualisieren
-		            updateStudentGrid(); // Schülerliste aktualisieren
+		            updateClassSelect();
+		            updateStudentGrid();
 		        } catch (e) {
 		            alert("Fehler beim Verarbeiten der Datei. Stellen Sie sicher, dass es sich um eine gültige Backup-Datei handelt.");
 		        }
 		    };
 
-		    reader.readAsText(file); // Datei als Text einlesen
+		    reader.readAsText(file);
 		}
-		
-		
-		
-		
 
         // Check for day change every minute
         setInterval(() => {
@@ -759,16 +827,18 @@
                 const currentDay = getCurrentDay();
                 if (new Date(state.currentSession) < new Date(currentDay)) {
                     state.currentSession = currentDay;
-                    saveState();
+                    saveState().catch(()=>{});
                     updateStudentGrid();
                 }
             }
         }, 60000);
 
-        // Initialize the app
-        loadState();
-        updateClassSelect();
-        updateStudentGrid();
+        // Initialize the app (async)
+        (async () => {
+            await loadState();
+            updateClassSelect();
+            updateStudentGrid();
+        })();
     </script>
 </body>
 </html>
