@@ -401,25 +401,34 @@
         });
     }
 
+    
     async function loadState() {
         try {
             db = await openDB();
-            const transaction = db.transaction(STORE_NAME, 'readonly');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.get('state');
+            return new Promise((resolve, reject) => {
+                const transaction = db.transaction(STORE_NAME, 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.get('state');
 
-            request.onsuccess = (event) => {
-                if (event.target.result) {
-                    state = event.target.result;
-                }
-                if (!state.currentSession) {
-                    state.currentSession = getCurrentDay();
-                }
-            };
+                request.onsuccess = (event) => {
+                    if (event.target.result) {
+                        state = event.target.result;
+                    }
+                    if (!state.currentSession) {
+                        state.currentSession = getCurrentDay();
+                    }
+                    resolve();
+                };
+
+                request.onerror = (event) => {
+                    reject('Error loading state');
+                };
+            });
         } catch (error) {
             console.error('Error loading state:', error);
         }
     }
+
 
     async function saveState() {
         try {
