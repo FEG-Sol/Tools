@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schüler-Bewertung</title>
+    <title>Schüler-Bewertung (IndexedDB)</title>
 	<link rel="icon" type="image/png" href="favicon/favicon-96x96.png" sizes="96x96" />
 	<link rel="icon" type="image/svg+xml" href="favicon/favicon.svg" />
 	<link rel="shortcut icon" href="favicon/favicon.ico" />
@@ -61,323 +61,784 @@
             background-color: #f8f9fa;
 			color: #000;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 6px;
             padding: 8px;
             cursor: pointer;
-            font-size: 14px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            min-height: 70px;
+            position: relative;
+            gap: 4px;
         }
         .student-btn:hover {
             background-color: #e9ecef;
         }
-        .student-btn.selected {
-            background-color: #007AFF;
-            color: white;
-        }
-        .rating-btn {
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 8px;
-            cursor: pointer;
+        .student-name {
             font-size: 14px;
-            margin: 2px;
+            font-weight: bold;
+            padding-right: 35px;
+            word-wrap: break-word;
         }
-        .rating-btn:hover {
-            background-color: #e9ecef;
+        .student-stats {
+            display: none;
+            font-size: 12px;
+            color: #666;
+            /*border-top: 1px solid #ddd;*/
+            padding-top: 4px;
+            margin-top: auto;
         }
-        .rating-btn.selected {
-            background-color: #28a745;
-            color: white;
-        }
-        .rating-container {
+        .show-stats .student-stats {
             display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            margin: 10px 0;
+            gap: 8px;
         }
-        .comment-box {
+        .stat-box {
+            border: 1px solid #ddd;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: white;
+        }
+        .current-rating {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            font-size: 20px;
+        }
+        textarea {
             width: 100%;
-            padding: 10px;
+            height: 100px;
             margin: 10px 0;
+            padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            resize: vertical;
-            min-height: 100px;
+        }
+		.complete-btn {
+		    background-color: #28a745;
+		    color: white;
+		    border: none;
+		    padding: 10px 20px;
+		    border-radius: 6px;
+		    cursor: pointer;
+		    font-size: 16px;
+		    margin: 5px;
+		}
+
+		.complete-btn:hover {
+		    background-color: #218838;
+		}
+        .reset-btn {
+            background-color: #dc3545;
+            margin-top: 20px;
+        }
+        .reset-btn:hover {
+            background-color: #c82333;
+        }
+        .control-panel {
+            margin: 10px 5px;
+            /*border-top: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;*/
+        }
+
+		#editStudentsDialog,#newClassDialog {
+		    background: white;
+		    padding: 20px;
+		    border-radius: 4px;
+		    border: 1px solid #ddd;
+		    margin: 10px 0;
+			max-width:400px;
+		}
+
+
+		#newClassDialog h3,#editStudentsDialog h3 {
+		    margin: 0 0 15px 0;
+		    font-size: 18px;
+		    color: #333;
+		}
+
+		#newClassDialog input[type="text"],
+		#newClassDialog textarea {
+		    box-sizing: border-box;
+		    width: 100%;
+		    padding: 8px 12px;
+		    border: 1px solid #ddd;
+		    border-radius: 4px;
+		    font-size: 14px;
+		    margin-bottom: 10px;
+		    font-family: inherit;
+		}
+
+		#newClassDialog input[type="text"]:focus,
+		#newClassDialog textarea:focus {
+		    outline: none;
+		    border-color: #007AFF;
+		    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+		}
+
+		#newClassDialog textarea {
+		    resize: vertical;
+		    min-height: 100px;
+		    max-height: 250px;
+		    margin: 10px 0;
+		    background: #f8f9fa;
+		}
+
+		#newClassDialog .btn {
+		    margin-right: 5px;
+		    margin-top: 5px;
+		}
+
+		.student-list {
+		    max-height: 250px;
+		    overflow-y: auto;
+		    margin: 10px 0;
+		    padding: 5px;
+		    background: #f8f9fa;
+		    border-radius: 4px;
+		    border: 1px solid #ddd;
+		}
+
+		.student-entry {
+		    display: flex;
+		    justify-content: space-between;
+		    align-items: center;
+		    padding: 8px 12px;
+		    margin: 2px 0;
+		    background: white;
+		    border-radius: 4px;
+		}
+
+		.student-entry:hover {
+		    background: #f0f0f0;
+		}
+
+		.delete-student {
+		    color: #dc3545;
+		    background: none;
+		    border: none;
+		    cursor: pointer;
+		    padding: 0 8px;
+		    font-size: 18px;
+		    font-weight: bold;
+		    border-radius: 4px;
+		}
+
+		.delete-student:hover {
+		    background-color: #dc3545;
+		    color: white;
+		}
+
+		.add-student-form {
+		    display: block;
+		    gap: 5px;
+		    margin: 10px 0;
+		}
+
+		.add-student-form input {
+		    flex-grow: 1;
+		    padding: 8px 12px;
+		    border: 1px solid #ddd;
+		    border-radius: 4px;
+		    font-size: 14px;
+		}
+
+		.add-student-form input:focus {
+		    outline: none;
+		    border-color: #007AFF;
+		    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+		}
+
+		.toggle-container {
+		    display: flex;
+		    align-items: center;
+		    gap: 10px;
+		    margin: 10px 0;
+		}
+
+		.toggle-label {
+		    position: relative;
+		    display: inline-block;
+		    width: 40px;
+		    height: 22px;
+		}
+
+		.toggle-label input {
+		    opacity: 0;
+		    width: 0;
+		    height: 0;
+		}
+
+		.toggle-slider {
+		    position: absolute;
+		    cursor: pointer;
+		    top: 0;
+		    left: 0;
+		    right: 0;
+		    bottom: 0;
+		    background-color: #ccc;
+		    transition: 0.3s;
+		    border-radius: 22px;
+		}
+
+		.toggle-slider:before {
+		    position: absolute;
+		    content: "";
+		    height: 16px;
+		    width: 16px;
+		    left: 3px;
+		    bottom: 3px;
+		    background-color: white;
+		    transition: 0.3s;
+		    border-radius: 50%;
+		}
+
+		.toggle-label input:checked + .toggle-slider {
+		    background-color: #007AFF;
+		}
+
+		.toggle-label input:checked + .toggle-slider:before {
+		    transform: translateX(18px);
+		}
+
+
+        @media (max-width: 768px) {
+            .student-grid {
+                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+                gap: 6px;
+            }
+            .student-btn {
+                padding: 6px;
+                min-height: 60px;
+            }
+            .student-name {
+                font-size: 13px;
+            }
+            .current-rating {
+                font-size: 18px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Schüler-Bewertung</h1>
-        
-        <div>
-            <select id="classSelect">
-                <option value="">Klasse auswählen</option>
+        <div id="classManagement">
+            <select id="classSelect" onchange="selectClass()">
+                <option value="">Klasse auswählen...</option>
             </select>
-            <button id="newClassBtn" class="btn">Neue Klasse</button>
-            <button id="deleteClassBtn" class="btn">Klasse löschen</button>
+            <button class="btn" onclick="showNewClassDialog()">Neue Klasse</button>
+			<button class="btn" id="editStudentsButton" onclick="showEditStudentsDialog()" style="display: none;">Bearbeiten</button>
+            <button class="btn" id="deleteClassButton" onclick="deleteCurrentClass()" style="display: none;">Löschen</button>
         </div>
-        
-        <div id="studentSection" class="hidden">
-            <h2 id="classNameHeader"></h2>
-            <div class="student-grid" id="studentGrid"></div>
-            <button id="newStudentBtn" class="btn">Neuer Schüler</button>
-            <button id="deleteStudentBtn" class="btn">Schüler löschen</button>
+
+        <div id="newClassDialog" class="hidden">
+            <h3>Neue Klasse erstellen</h3>
+            <input type="text" id="newClassName" placeholder="Klassenname">
+            <textarea id="studentsList" placeholder="Schülernamen (einer pro Zeile)"></textarea>
+            <button class="btn" onclick="createNewClass()">Erstellen</button>
+            <button class="btn" onclick="hideNewClassDialog()">Abbrechen</button>
         </div>
-        
-        <div id="ratingSection" class="hidden">
-            <h2 id="studentNameHeader"></h2>
-            <div class="rating-container" id="ratingContainer"></div>
-            <textarea id="commentBox" class="comment-box" placeholder="Bemerkungen..."></textarea>
-            <button id="saveRatingBtn" class="btn">Bewertung speichern</button>
-            <button id="backToStudentsBtn" class="btn">Zurück zu Schülern</button>
+
+		<div id="editStudentsDialog" class="hidden">
+		    <h3>Hinzufügen</h3>
+		    <div class="add-student-form">
+		        <input type="text" id="newStudentName" placeholder="Name hinzufügen">
+		        <button class="btn" onclick="addStudent()">Hinzufügen</button>
+		    </div>
+		    <h3>Löschen</h3>
+		    <div class="student-list" id="studentList">
+		        <!-- Wird dynamisch gefüllt -->
+		    </div>
+		    <button class="btn" onclick="hideEditStudentsDialog()">Fertig</button>
+		</div>
+
+        <div id="controlPanel" class="control-panel hidden">
+			<div class="toggle-container">
+			    <label class="toggle-label">
+			        <input type="checkbox" id="toggleStats" onchange="toggleStats()" />
+			        <span class="toggle-slider"></span>
+			    </label>
+			    <span id="toggleStatsText">Statistik anzeigen</span>
+			</div>
         </div>
+
+    	<div id="studentGrid" class="student-grid"></div>
+    	<div>
+			<button id="finishButton" class="btn complete-btn" onclick="finishCurrentSession()">Fertig</button>
+    		<button id="resetStatsButton" class="btn reset-btn hidden" onclick="resetStats()">Klasse zurücksetzen</button>
+		</div>
+		<div>
+			<button class="btn" onclick="downloadBackup()">Backup</button>
+			<input type="file" id="uploadInput" style="display:none" onchange="uploadBackup(event)">
+			<button class="btn" onclick="document.getElementById('uploadInput').click()">Wiederherstellen</button>
+		</div>
     </div>
 
     <script>
-        // IndexedDB setup
-        let db;
-        const request = indexedDB.open('StudentRatingsDB', 1);
-
-        request.onupgradeneeded = function(event) {
-            db = event.target.result;
-            if (!db.objectStoreNames.contains('classes')) {
-                db.createObjectStore('classes', { keyPath: 'id' });
-            }
-            if (!db.objectStoreNames.contains('students')) {
-                db.createObjectStore('students', { keyPath: 'id' });
-            }
-            if (!db.objectStoreNames.contains('ratings')) {
-                db.createObjectStore('ratings', { keyPath: 'id' });
-            }
+        // Application state (kept in memory while app runs)
+        let state = {
+            classes: {},
+            currentClass: null,
+            showStats: false,
+            currentSession: null
         };
 
-        request.onsuccess = function(event) {
-            db = event.target.result;
-            loadClasses();
-        };
+        // ----------------------
+        // IndexedDB helper
+        // ----------------------
+        const DB_NAME = 'participationDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'app';
 
-        request.onerror = function(event) {
-            console.error('Database error:', event.target.errorCode);
-        };
-
-        // Load classes from IndexedDB
-        function loadClasses() {
-            const transaction = db.transaction(['classes'], 'readonly');
-            const store = transaction.objectStore('classes');
-            const request = store.getAll();
-
-            request.onsuccess = function(event) {
-                const classes = event.target.result;
-                const classSelect = document.getElementById('classSelect');
-                classSelect.innerHTML = '<option value="">Klasse auswählen</option>';
-                classes.forEach(cls => {
-                    const option = document.createElement('option');
-                    option.value = cls.id;
-                    option.textContent = cls.name;
-                    classSelect.appendChild(option);
-                });
-            };
-        }
-
-        // Save a class to IndexedDB
-        function saveClass(name) {
-            const transaction = db.transaction(['classes'], 'readwrite');
-            const store = transaction.objectStore('classes');
-            const classObj = { id: Date.now().toString(), name: name };
-            store.add(classObj);
-            transaction.oncomplete = loadClasses;
-        }
-
-        // Delete a class from IndexedDB
-        function deleteClass(id) {
-            const transaction = db.transaction(['classes', 'students', 'ratings'], 'readwrite');
-            const classStore = transaction.objectStore('classes');
-            const studentStore = transaction.objectStore('students');
-            const ratingStore = transaction.objectStore('ratings');
-
-            classStore.delete(id);
-
-            // Delete associated students and ratings
-            const studentIndex = studentStore.index('classId');
-            const studentRequest = studentIndex.getAll(id);
-
-            studentRequest.onsuccess = function(event) {
-                const students = event.target.result;
-                students.forEach(student => {
-                    studentStore.delete(student.id);
-                    const ratingIndex = ratingStore.index('studentId');
-                    const ratingRequest = ratingIndex.getAll(student.id);
-
-                    ratingRequest.onsuccess = function(event) {
-                        const ratings = event.target.result;
-                        ratings.forEach(rating => {
-                            ratingStore.delete(rating.id);
-                        });
-                    };
-                });
-            };
-
-            transaction.oncomplete = loadClasses;
-        }
-
-        // Load students for a class from IndexedDB
-        function loadStudents(classId, className) {
-            const transaction = db.transaction(['students'], 'readonly');
-            const store = transaction.objectStore('students');
-            const index = store.index('classId');
-            const request = index.getAll(classId);
-
-            request.onsuccess = function(event) {
-                const students = event.target.result;
-                const studentGrid = document.getElementById('studentGrid');
-                studentGrid.innerHTML = '';
-                students.forEach(student => {
-                    const button = document.createElement('button');
-                    button.className = 'student-btn';
-                    button.textContent = student.name;
-                    button.dataset.id = student.id;
-                    button.dataset.classId = classId;
-                    button.onclick = () => loadRatings(student.id, student.name);
-                    studentGrid.appendChild(button);
-                });
-                document.getElementById('classNameHeader').textContent = className;
-                document.getElementById('studentSection').classList.remove('hidden');
-                document.getElementById('ratingSection').classList.add('hidden');
-            };
-        }
-
-        // Save a student to IndexedDB
-        function saveStudent(classId, name) {
-            const transaction = db.transaction(['students'], 'readwrite');
-            const store = transaction.objectStore('students');
-            const studentObj = { id: Date.now().toString(), classId: classId, name: name };
-            store.add(studentObj);
-            transaction.oncomplete = () => loadStudents(classId, document.getElementById('classSelect').options[document.getElementById('classSelect').selectedIndex].text);
-        }
-
-        // Delete a student from IndexedDB
-        function deleteStudent(id, classId) {
-            const transaction = db.transaction(['students', 'ratings'], 'readwrite');
-            const studentStore = transaction.objectStore('students');
-            const ratingStore = transaction.objectStore('ratings');
-
-            studentStore.delete(id);
-
-            const ratingIndex = ratingStore.index('studentId');
-            const ratingRequest = ratingIndex.getAll(id);
-
-            ratingRequest.onsuccess = function(event) {
-                const ratings = event.target.result;
-                ratings.forEach(rating => {
-                    ratingStore.delete(rating.id);
-                });
-            };
-
-            transaction.oncomplete = () => loadStudents(classId, document.getElementById('classSelect').options[document.getElementById('classSelect').selectedIndex].text);
-        }
-
-        // Load ratings for a student from IndexedDB
-        function loadRatings(studentId, studentName) {
-            const transaction = db.transaction(['ratings'], 'readonly');
-            const store = transaction.objectStore('ratings');
-            const index = store.index('studentId');
-            const request = index.getAll(studentId);
-
-            request.onsuccess = function(event) {
-                const ratings = event.target.result;
-                const ratingContainer = document.getElementById('ratingContainer');
-                ratingContainer.innerHTML = '';
-
-                const ratingTypes = ['Mitarbeit', 'Hausaufgaben', 'Test', 'Mündlich', 'Sonstiges'];
-                ratingTypes.forEach(type => {
-                    const button = document.createElement('button');
-                    button.className = 'rating-btn';
-                    button.textContent = type;
-                    button.dataset.type = type;
-                    button.dataset.studentId = studentId;
-                    button.onclick = () => selectRatingType(type, studentId);
-                    ratingContainer.appendChild(button);
-                });
-
-                const commentBox = document.getElementById('commentBox');
-                commentBox.value = ratings.length > 0 ? ratings[0].comment : '';
-
-                document.getElementById('studentNameHeader').textContent = studentName;
-                document.getElementById('ratingSection').classList.remove('hidden');
-            };
-        }
-
-        // Save a rating to IndexedDB
-        function saveRating(studentId, type, comment) {
-            const transaction = db.transaction(['ratings'], 'readwrite');
-            const store = transaction.objectStore('ratings');
-            const ratingObj = { id: Date.now().toString(), studentId: studentId, type: type, comment: comment };
-            store.put(ratingObj);
-        }
-
-        // Event listeners
-        document.getElementById('newClassBtn').addEventListener('click', () => {
-            const className = prompt('Name der neuen Klasse:');
-            if (className) saveClass(className);
-        });
-
-        document.getElementById('deleteClassBtn').addEventListener('click', () => {
-            const classId = document.getElementById('classSelect').value;
-            if (classId && confirm('Sind Sie sicher, dass Sie diese Klasse löschen möchten?')) {
-                deleteClass(classId);
-            }
-        });
-
-        document.getElementById('classSelect').addEventListener('change', (e) => {
-            if (e.target.value) {
-                loadStudents(e.target.value, e.target.options[e.target.selectedIndex].text);
-            }
-        });
-
-        document.getElementById('newStudentBtn').addEventListener('click', () => {
-            const classId = document.getElementById('classSelect').value;
-            if (classId) {
-                const studentName = prompt('Name des neuen Schülers:');
-                if (studentName) saveStudent(classId, studentName);
-            }
-        });
-
-        document.getElementById('deleteStudentBtn').addEventListener('click', () => {
-            const selectedStudent = document.querySelector('.student-btn.selected');
-            if (selectedStudent && confirm('Sind Sie sicher, dass Sie diesen Schüler löschen möchten?')) {
-                deleteStudent(selectedStudent.dataset.id, selectedStudent.dataset.classId);
-            }
-        });
-
-        document.getElementById('saveRatingBtn').addEventListener('click', () => {
-            const selectedRating = document.querySelector('.rating-btn.selected');
-            const studentId = selectedRating ? selectedRating.dataset.studentId : null;
-            const type = selectedRating ? selectedRating.dataset.type : null;
-            const comment = document.getElementById('commentBox').value;
-
-            if (studentId && type) {
-                saveRating(studentId, type, comment);
-                alert('Bewertung gespeichert!');
-            }
-        });
-
-        document.getElementById('backToStudentsBtn').addEventListener('click', () => {
-            const classId = document.getElementById('classSelect').value;
-            if (classId) {
-                loadStudents(classId, document.getElementById('classSelect').options[document.getElementById('classSelect').selectedIndex].text);
-            }
-        });
-
-        function selectRatingType(type, studentId) {
-            const buttons = document.querySelectorAll('.rating-btn');
-            buttons.forEach(button => {
-                button.classList.remove('selected');
-                if (button.dataset.type === type) {
-                    button.classList.add('selected');
-                }
+        function openDb() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(DB_NAME, DB_VERSION);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME);
+                    }
+                };
+                req.onsuccess = (e) => resolve(e.target.result);
+                req.onerror = (e) => reject(e.target.error);
             });
         }
+
+        async function getStoredState() {
+            try {
+                const db = await openDb();
+                return await new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readonly');
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.get('participationAppState');
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (e) {
+                console.error('getStoredState error', e);
+                return null;
+            }
+        }
+
+        async function putStoredState(value) {
+            try {
+                const db = await openDb();
+                return await new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.put(value, 'participationAppState');
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (e) {
+                console.error('putStoredState error', e);
+            }
+        }
+
+        async function clearStoredState() {
+            try {
+                const db = await openDb();
+                return await new Promise((resolve, reject) => {
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.delete('participationAppState');
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
+            } catch (e) {
+                console.error('clearStoredState error', e);
+            }
+        }
+
+        // ----------------------
+        // State load/save (now async)
+        // ----------------------
+        async function loadState() {
+            const saved = await getStoredState();
+            if (saved) {
+                try {
+                    // saved might be stored as object already, or as JSON string
+                    state = typeof saved === 'string' ? JSON.parse(saved) : saved;
+                } catch (e) {
+                    console.error('Fehler beim Parsen des gespeicherten Zustands', e);
+                }
+            }
+            if (!state.currentSession) {
+                state.currentSession = getCurrentDay();
+            }
+        }
+
+        async function saveState() {
+            // store plain object (avoid functions)
+            await putStoredState(state);
+        }
+
+        // ----------------------
+        // UI / App logic (mostly unchanged; calls to saveState() are async but we don't await everywhere)
+        // ----------------------
+
+        function updateClassSelect() {
+            const select = document.getElementById('classSelect');
+            select.innerHTML = '<option value="">Klasse auswählen...</option>';
+            Object.keys(state.classes).forEach(className => {
+                const option = document.createElement('option');
+                option.value = className;
+                option.textContent = className;
+                if (state.currentClass === className) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+
+            const deleteButton = document.getElementById('deleteClassButton');
+            deleteButton.style.display = state.currentClass ? 'inline-block' : 'none';
+
+			const editButton = document.getElementById('editStudentsButton');
+			editButton.style.display = state.currentClass ? 'inline-block' : 'none';
+
+            const resetButton = document.getElementById('resetStatsButton');
+            resetButton.classList.toggle('hidden', !state.currentClass);
+
+            const finishButton = document.getElementById('finishButton');
+            finishButton.classList.toggle('hidden', !state.currentClass);
+
+            const controlPanel = document.getElementById('controlPanel');
+            controlPanel.classList.toggle('hidden', !state.currentClass);
+
+            document.getElementById("toggleStats").checked = state.showStats;
+        }
+
+		function toggleStats() {
+		    state.showStats = !state.showStats;
+		    document.getElementById("toggleStats").checked = state.showStats;
+		    saveState().catch(()=>{});
+		    updateStudentGrid();
+		}
+
+		// Beim Laden den Schalter entsprechend setzen
+		document.addEventListener("DOMContentLoaded", () => {
+		    document.getElementById("toggleStats").checked = state.showStats;
+		});
+
+        function finishCurrentSession() {
+            if (!state.currentClass) return;
+                const classData = state.classes[state.currentClass];
+
+                if (classData.dailyRatings[state.currentSession]) {
+                    Object.entries(classData.dailyRatings[state.currentSession]).forEach(([student, rating]) => {
+                        if (!classData.ratings[student]) {
+                            classData.ratings[student] = { ok: 0, good: 0 };
+                        }
+                        if (rating === 1) classData.ratings[student].ok++;
+                        if (rating === 2) classData.ratings[student].good++;
+                    });
+                }
+
+                classData.dailyRatings[state.currentSession] = {};
+
+                state.currentSession = new Date().toISOString();
+                saveState().catch(()=>{});
+                updateStudentGrid();
+        }
+
+        function showNewClassDialog() {
+            document.getElementById('newClassDialog').classList.remove('hidden');
+        }
+
+        function hideNewClassDialog() {
+            document.getElementById('newClassDialog').classList.add('hidden');
+            document.getElementById('newClassName').value = '';
+            document.getElementById('studentsList').value = '';
+        }
+
+        function createNewClass() {
+            const className = document.getElementById('newClassName').value.trim();
+            const studentsText = document.getElementById('studentsList').value.trim();
+
+            if (!className) {
+                alert('Bitte geben Sie einen Klassennamen ein.');
+                return;
+            }
+
+            const students = studentsText.split('\n')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+
+            if (students.length < 1) {
+                alert('Bitte geben Sie mindestens einen Schüler ein.');
+                return;
+            }
+
+            state.classes[className] = {
+                students: students.sort(),
+                ratings: {},
+                dailyRatings: {}
+            };
+
+            saveState().catch(()=>{});
+            selectClass(className);
+            updateClassSelect();
+            hideNewClassDialog();
+        }
+
+        function deleteCurrentClass() {
+            if (!state.currentClass) return;
+
+            if (confirm(`Möchten Sie die Klasse "${state.currentClass}" wirklich löschen?`)) {
+                delete state.classes[state.currentClass];
+                state.currentClass = null;
+                saveState().catch(()=>{});
+                updateClassSelect();
+                updateStudentGrid();
+            }
+        }
+
+        function resetStats() {
+            if (!state.currentClass) return;
+
+            if (confirm(`Möchten Sie die Statistik für die Klasse "${state.currentClass}" wirklich zurücksetzen?`)) {
+                const classData = state.classes[state.currentClass];
+                classData.ratings = {};
+                classData.dailyRatings = {};
+                classData.students.forEach(student => {
+                    classData.ratings[student] = { ok: 0, good: 0 };
+                });
+                saveState().catch(()=>{});
+                updateStudentGrid();
+            }
+        }
+
+        function selectClass(className) {
+            const selectedClass = className || document.getElementById('classSelect').value;
+            state.currentClass = selectedClass;
+            saveState().catch(()=>{});
+            updateClassSelect();
+            updateStudentGrid();
+        }
+
+        function getCurrentDay() {
+            const now = new Date();
+            const nextDay = new Date(now);
+            nextDay.setHours(4, 0, 0, 0);
+
+            if (now >= nextDay) {
+                nextDay.setDate(nextDay.getDate() + 1);
+            }
+
+            return nextDay.toISOString();
+        }
+
+        function updateStudentGrid() {
+            const grid = document.getElementById('studentGrid');
+            grid.innerHTML = '';
+
+            if (!state.currentClass) return;
+
+            const classData = state.classes[state.currentClass];
+            grid.className = `student-grid${state.showStats ? ' show-stats' : ''}`;
+
+            // Check if we need to start a new session (4 AM next day)
+            const currentDay = getCurrentDay();
+            if (new Date(state.currentSession) < new Date(currentDay)) {
+                state.currentSession = currentDay;
+                saveState().catch(()=>{});
+            }
+
+            // Initialize daily ratings if not exists
+            if (!classData.dailyRatings[state.currentSession]) {
+                classData.dailyRatings[state.currentSession] = {};
+            }
+
+            classData.students.forEach(student => {
+                // Initialize ratings if not exists
+                if (!classData.ratings[student]) {
+                    classData.ratings[student] = { ok: 0, good: 0 };
+                }
+
+                const button = document.createElement('button');
+                button.className = 'student-btn';
+
+                const currentRating = classData.dailyRatings[state.currentSession][student] || 0;
+                const ratingEmoji = currentRating === 0 ? '' : 
+                                  currentRating === 1 ? '🙂' : '🤩';
+
+                const stats = classData.ratings[student];
+
+                button.innerHTML = `
+                    <div class="student-name">${student}</div>
+                    <div class="current-rating">${ratingEmoji}</div>
+                    <div class="student-stats">
+                        <span class="stat-box">${stats.ok}</span>
+                        <span class="stat-box">${stats.good}</span>
+                    </div>
+                `;
+
+                button.onclick = () => toggleRating(student);
+                grid.appendChild(button);
+            });
+
+            saveState().catch(()=>{});
+        }
+
+        function toggleRating(student) {
+            const classData = state.classes[state.currentClass];
+
+            if (!classData.dailyRatings[state.currentSession]) {
+                classData.dailyRatings[state.currentSession] = {};
+            }
+
+            const currentRating = classData.dailyRatings[state.currentSession][student] || 0;
+            const newRating = (currentRating + 1) % 3;
+
+            if (newRating === 0) {
+                delete classData.dailyRatings[state.currentSession][student];
+            } else {
+                classData.dailyRatings[state.currentSession][student] = newRating;
+            }
+
+            saveState().catch(()=>{});
+            updateStudentGrid();
+        }
+
+		function showEditStudentsDialog() {
+		    document.getElementById('editStudentsDialog').classList.remove('hidden');
+		    updateStudentList();
+		}
+
+		function hideEditStudentsDialog() {
+		    document.getElementById('editStudentsDialog').classList.add('hidden');
+		}
+
+		function updateStudentList() {
+		    if (!state.currentClass) return;
+
+		    const studentList = document.getElementById('studentList');
+		    studentList.innerHTML = '';
+
+		    state.classes[state.currentClass].students
+		        .sort((a, b) => a.localeCompare(b, undefined, {sensitivity: 'base'}))
+		        .forEach(student => {
+		            const entry = document.createElement('div');
+		            entry.className = 'student-entry';
+
+		            const name = document.createElement('span');
+		            name.textContent = student;
+
+		            const deleteButton = document.createElement('button');
+		            deleteButton.className = 'delete-student';
+		            deleteButton.textContent = '×';
+		            deleteButton.onclick = () => removeStudent(student);
+
+		            entry.appendChild(name);
+		            entry.appendChild(deleteButton);
+		            studentList.appendChild(entry);
+		        });
+		}
+
+		function addStudent() {
+		    if (!state.currentClass) return;
+
+		    const input = document.getElementById('newStudentName');
+		    const studentName = input.value.trim();
+
+		    if (!studentName) {
+		        alert('Bitte geben Sie einen Namen ein.');
+		        return;
+		    }
+
+		    if (state.classes[state.currentClass].students.includes(studentName)) {
+		        alert('Dieser Schüler ist bereits in der Klasse.');
+		        return;
+		    }
+
+		    state.classes[state.currentClass].students.push(studentName);
+		    state.classes[state.currentClass].students.sort((a, b) => 
+		        a.localeCompare(b, undefined, {sensitivity: 'base'})
+		    );
+
+		    saveState().catch(()=>{});
+		    updateStudentList();
+			updateStudentGrid();
+		    input.value = '';
+		}
+
+		function removeStudent(studentName) {
+		    if (!state.currentClass) return;
+
+		    if (confirm(`Möchten Sie ${studentName} wirklich aus der Klasse entfernen?`)) {
+		        const index = state.classes[state.currentClass].students.indexOf(studentName);
+		        if (index > -1) {
+		            state.classes[state.currentClass].students.splice(index, 1);
+		            saveState().catch(()=>{});
+		            updateStudentList();
+					updateStudentGrid();
+		        }
+		    }
+		}
+
+
+		async function downloadBackup() {
+		    const stored = await getStoredState();
+		    if (!stored) {
+		        alert("Keine Daten vorhanden, die heruntergeladen werden können.");
+		        return;
+		    }
+		    const data = typeof stored === 'string' ? stored : JSON.stringify(stored, null, 2);
+		    const blob = new Blob([data], { type: 'application/json' });
+		    const url = URL.createObjectURL(blob);
+
+		    const link = document.createElement('a');
+		    link.href = url;
+		    link.download = 'backup.json';
+		    link.click();
+
+		    URL.revokeObjectURL(url);
+		}
+
+		function uploadBackup(event) {
+		    const file = event.target.files[0];
+		    if (!file) {
+		        alert("Keine Datei ausgewählt.");
+		        return;
+		    }
+
+		    const reader = new FileReader();
+		    reader.onload = async function(event) {
+		        try {
+		            const data = JSON.parse(event.target.result);
+		            // store object directly
+		            await putStoredState(data);
+		            alert("Daten erfolgreich hochgeladen.");
+		            await loadState();
+		            if (state.currentClass) {
+		                document.getElementById('classSelect').value = state.currentClass;
+		            }
+		            updateClassSelect();
+		            updateStudentGrid();
+		        } catch (e) {
+		            alert("Fehler beim Verarbeiten der Datei. Stellen Sie sicher, dass es sich um eine gültige Backup-Datei handelt.");
+		        }
+		    };
+
+		    reader.readAsText(file);
+		}
+
+        // Check for day change every minute
+        setInterval(() => {
+            if (state.currentClass) {
+                const currentDay = getCurrentDay();
+                if (new Date(state.currentSession) < new Date(currentDay)) {
+                    state.currentSession = currentDay;
+                    saveState().catch(()=>{});
+                    updateStudentGrid();
+                }
+            }
+        }, 60000);
+
+        // Initialize the app (async)
+        (async () => {
+            await loadState();
+            updateClassSelect();
+            updateStudentGrid();
+        })();
     </script>
 </body>
 </html>
