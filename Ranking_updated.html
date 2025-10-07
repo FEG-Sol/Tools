@@ -316,7 +316,7 @@
             <button class="btn" onclick="createNewClass()">Erstellen</button>
             <button class="btn" onclick="hideNewClassDialog()">Abbrechen</button>
         </div>
-		 
+	 	
 		<div id="editStudentsDialog" class="hidden">
 		    <h3>Hinzufügen</h3>
 		    <div class="add-student-form">
@@ -329,7 +329,7 @@
 		    </div>
 		    <button class="btn" onclick="hideEditStudentsDialog()">Fertig</button>
 		</div>
-		 
+	 	
         <div id="comparisonSection" class="hidden">
             <div class="progress">
                 <div>Fortschritt: <span id="progressText">0%</span></div>
@@ -355,67 +355,7 @@
     </div>
 	<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
-    // IndexedDB Initialisierung
-    let db;
-    const DB_NAME = 'ParticipationAppDB';
-    const STORE_NAME = 'appState';
-
-    function openDB() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(DB_NAME, 1);
-
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains(STORE_NAME)) {
-                    db.createObjectStore(STORE_NAME);
-                }
-            };
-
-            request.onsuccess = (event) => {
-                db = event.target.result;
-                resolve(db);
-            };
-
-            request.onerror = (event) => {
-                reject('Error opening IndexedDB');
-            };
-        });
-    }
-
-    async function loadState() {
-        try {
-            db = await openDB();
-            const transaction = db.transaction(STORE_NAME, 'readonly');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.get('state');
-
-            request.onsuccess = (event) => {
-                if (event.target.result) {
-                    state = event.target.result;
-                }
-                if (!state.currentSession) {
-                    state.currentSession = getCurrentDay();
-                }
-            };
-        } catch (error) {
-            console.error('Error loading state:', error);
-        }
-    }
-
-    async function saveState() {
-        try {
-            if (!db) {
-                db = await openDB();
-            }
-            const transaction = db.transaction(STORE_NAME, 'readwrite');
-            const store = transaction.objectStore(STORE_NAME);
-            store.put(state, 'state');
-        } catch (error) {
-            console.error('Error saving state:', error);
-        }
-    }
-    
-		// TrueSkill-Implementierung
+		// TrueSkill-Implementierung (unverändert)
 		class trueSkill {
 		    constructor() {
 		        this.mu = 25.0;          // Initialer Skill
@@ -505,34 +445,85 @@
 		    }
 		}
 		
-		// 2. State-Management Funktionen
+		// IndexedDB wrapper (promisified)
+		const DB_NAME = 'rankingAppDB';
+		const DB_STORE = 'state';
+		const DB_KEY = 'rankingAppState';
+
+		function openDB() {
+		    return new Promise((resolve, reject) => {
+		        const req = indexedDB.open(DB_NAME, 1);
+		        req.onupgradeneeded = function(e) {
+		            const db = e.target.result;
+		            if (!db.objectStoreNames.contains(DB_STORE)) {
+		                db.createObjectStore(DB_STORE);
+		            }
+		        };
+		        req.onsuccess = function(e) { resolve(e.target.result); };
+		        req.onerror = function(e) { reject(e.target.error); };
+		    });
+		}
+
+		async function idbSave(obj) {
+		    const db = await openDB();
+		    return new Promise((resolve, reject) => {
+		        const tx = db.transaction(DB_STORE, 'readwrite');
+		        tx.objectStore(DB_STORE).put(obj, DB_KEY);
+		        tx.oncomplete = () => { db.close(); resolve(); };
+		        tx.onerror = (e) => { db.close(); reject(e.target.error); };
+		    });
+		}
+
+		async function idbLoad() {
+		    const db = await openDB();
+		    return new Promise((resolve, reject) => {
+		        const tx = db.transaction(DB_STORE, 'readonly');
+		        const req = tx.objectStore(DB_STORE).get(DB_KEY);
+		        req.onsuccess = (e) => { db.close(); resolve(e.target.result); };
+		        req.onerror = (e) => { db.close(); reject(e.target.error); };
+		    });
+		}
+
+		async function idbDelete() {
+		    const db = await openDB();
+		    return new Promise((resolve, reject) => {
+		        const tx = db.transaction(DB_STORE, 'readwrite');
+		        tx.objectStore(DB_STORE).delete(DB_KEY);
+		        tx.oncomplete = () => { db.close(); resolve(); };
+		        tx.onerror = (e) => { db.close(); reject(e.target.error); };
+		    });
+		}
+
+		// 2. State-Management Funktionen (IndexedDB statt localStorage)
 		function saveState() {
+		    // Speichere nicht die gesamte Funktion-Instanzen (z.B. trueSkill), sondern nur die serialisierbaren Daten
 		    const saveableState = {
 		        classes: state.classes,
 		        currentClass: state.currentClass,
 		        remainingComparisons: state.remainingComparisons,
 		        compareIndex: state.compareIndex
 		    };
-		    localStorage.setItem('rankingAppState', JSON.stringify(saveableState));
+		    idbSave(saveableState).catch(err => console.error('Fehler beim Speichern in IndexedDB', err));
 		}
 
 		async function loadState() {
-		    const savedState = localStorage.getItem('rankingAppState');
-		    if (savedState) {
-		        const parsedState = JSON.parse(savedState);
-		        // Neues State-Objekt erstellen
-		        state = {
-		            trueSkill: new trueSkill(),
-		            classes: parsedState.classes || {},
-		            currentClass: null, //parsedState.currentClass || null,
-		            remainingComparisons: parsedState.remainingComparisons || [],
-		            compareIndex: parsedState.compareIndex || 0
-		        };
+		    try {
+		        const parsedState = await idbLoad();
+		        if (parsedState) {
+		            state = {
+		                trueSkill: new trueSkill(),
+		                classes: parsedState.classes || {},
+		                currentClass: null,
+		                remainingComparisons: parsedState.remainingComparisons || [],
+		                compareIndex: parsedState.compareIndex || 0
+		            };
+		        }
+		    } catch (e) {
+		        console.error('Fehler beim Laden aus IndexedDB', e);
 		    }
-		    // Wenn kein gespeicherter State existiert, behalten wir den initialen State
 		}
 		
-        // Initiale State-Definition bleibt gleich, aber füge TrueSkill hinzu
+		// Initiale State-Definition bleibt gleich, aber füge TrueSkill hinzu
 		let state = {
 		    trueSkill: new trueSkill(),
 		    classes: {},
@@ -542,16 +533,13 @@
 		};
 
 		// 4. Event Listener für Seitenlade
-		document.addEventListener('DOMContentLoaded', () => {
-		    loadState();
-		    updateClassSelect();
-		});
+		document.addEventListener('DOMContentLoaded', () => { init(); });
 
         // Initialisierung
-        function init() {
-            loadState();
-            updateClassSelect();
-        }
+		async function init() {
+		    await loadState();
+		    updateClassSelect();
+		}
 
 
 
@@ -927,36 +915,36 @@
 			        delay: 150, // Kurze Verzögerung für bessere Mobile-Erkennung
 			        delayOnTouchOnly: true, // Verzögerung nur auf Touch-Geräten
 			        onEnd: function(evt) {
-		                const item = evt.item;
-		                const studentName = item.children[1].textContent;
-		                const classData = state.classes[state.currentClass];
+			                const item = evt.item;
+			                const studentName = item.children[1].textContent;
+			                const classData = state.classes[state.currentClass];
                 
-		                // Neue Position berechnen
-		                const newIndex = evt.newIndex;
-		                const rows = Array.from(list.children);
+			                // Neue Position berechnen
+			                const newIndex = evt.newIndex;
+			                const rows = Array.from(list.children);
                 
-		                // Ratings der Nachbarn
-		                const prevRating = newIndex > 0 ? 
-		                    parseFloat(rows[newIndex - 1].children[2].textContent) : null;
-		                const nextRating = newIndex < rows.length - 1 ? 
-		                    parseFloat(rows[newIndex + 1].children[2].textContent) : null;
+			                // Ratings der Nachbarn
+			                const prevRating = newIndex > 0 ? 
+			                    parseFloat(rows[newIndex - 1].children[2].textContent) : null;
+			                const nextRating = newIndex < rows.length - 1 ? 
+			                    parseFloat(rows[newIndex + 1].children[2].textContent) : null;
 
-		                // Neues Rating berechnen
-		                let newRating;
-		                if (prevRating !== null && nextRating !== null) {
-		                    newRating = (prevRating + nextRating) / 2;
-		                } else if (prevRating !== null) {
-		                    newRating = prevRating - 1;
-		                } else if (nextRating !== null) {
-		                    newRating = nextRating + 1;
-		                } else {
-		                    newRating = classData.ratings[studentName].mu;
-		                }
+			                // Neues Rating berechnen
+			                let newRating;
+			                if (prevRating !== null && nextRating !== null) {
+			                    newRating = (prevRating + nextRating) / 2;
+			                } else if (prevRating !== null) {
+			                    newRating = prevRating - 1;
+			                } else if (nextRating !== null) {
+			                    newRating = nextRating + 1;
+			                } else {
+			                    newRating = classData.ratings[studentName].mu;
+			                }
 
-		                // Rating aktualisieren
-		                classData.ratings[studentName].mu = newRating;
-		                saveState();
-		                updateUI();
+			                // Rating aktualisieren
+			                classData.ratings[studentName].mu = newRating;
+			                saveState();
+			                updateUI();
 		            }
 		        });
 		    }
@@ -971,18 +959,17 @@
 		
 		
 		
-		
 		function resetRanking() {
 		    if (!state.currentClass) return;
-    		
+        
             if (confirm(`Ranking wirklich zurücksetzen?`)) {
 				const classData = state.classes[state.currentClass];
 				classData.ratings = {};
 				classData.comparisons = {};
 				// Reinitialisieren der TrueSkill-Ratings für alle Schüler
 				classData.students.forEach(student => {
-		        	classData.ratings[student] = state.trueSkill.createRating();
-		    	});
+			        	classData.ratings[student] = state.trueSkill.createRating();
+			     	});
 			}
 
 		    saveState();
@@ -1009,7 +996,7 @@
         }
 
         // Initialisiere die App
-        init();
+        // init() wird beim DOMContentLoaded aufgerufen
 		
 		//////////////////////////////////
 	    let timeoutId;
@@ -1044,14 +1031,14 @@
 	    resetTimer();
 		
 		/////////////////////
-		function downloadBackup() {
-		    const data = localStorage.getItem('rankingAppState'); // Holen der gespeicherten Daten
+		async function downloadBackup() {
+		    const data = await idbLoad(); // Holen der gespeicherten Daten aus IndexedDB
 		    if (!data) {
 		        alert("Keine Daten vorhanden, die heruntergeladen werden können.");
 		        return;
 		    }
 
-		    const blob = new Blob([data], { type: 'application/json' }); // JSON-Daten in Blob umwandeln
+		    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); // JSON-Daten in Blob umwandeln
 		    const url = URL.createObjectURL(blob);
 
 		    const link = document.createElement('a');
@@ -1061,7 +1048,7 @@
 
 		    URL.revokeObjectURL(url); // Speicher freigeben
 		}
-		function uploadBackup(event) {
+		async function uploadBackup(event) {
 		    const file = event.target.files[0]; // Hochgeladene Datei abrufen
 		    if (!file) {
 		        alert("Keine Datei ausgewählt.");
@@ -1069,12 +1056,12 @@
 		    }
 
 		    const reader = new FileReader();
-		    reader.onload = function(event) {
+		    reader.onload = async function(event) {
 		        try {
 		            const data = JSON.parse(event.target.result); // JSON-Daten parsen
-		            localStorage.setItem('rankingAppState', JSON.stringify(data)); // In localStorage speichern
+		            await idbSave(data); // In IndexedDB speichern
 		            alert("Daten erfolgreich hochgeladen.");
-		            loadState(); // Geladene Daten in der App anwenden
+		            await loadState(); // Geladene Daten in der App anwenden
 		            updateClassSelect(); // Dropdown-Liste der Klassen aktualisieren
 		        } catch (e) {
 		            alert("Fehler beim Verarbeiten der Datei. Stellen Sie sicher, dass es sich um eine gültige Backup-Datei handelt.");
