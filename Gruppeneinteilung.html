@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gruppeneinteilung</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Gruppeneinteilung (IndexedDB)</title>
 	<link rel="icon" type="image/png" href="favicon/favicon-96x96.png" sizes="96x96" />
 	<link rel="icon" type="image/svg+xml" href="favicon/favicon.svg" />
 	<link rel="shortcut icon" href="favicon/favicon.ico" />
@@ -86,7 +86,7 @@
             background: #f8f9fa;
             border-radius: 4px;
         }
-		
+
 		.students-pool-container {
 		    position: relative;
 		    margin: 20px 0 0 0;
@@ -106,7 +106,7 @@
 		    pointer-events: auto;
 		    cursor: pointer;
 		}
-		
+
         .groups-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -218,7 +218,7 @@
 		.modal-buttons {
 		    margin-bottom: 20px;
 		}
-		
+
 		.info-container {
 			font-size: 12px;
 			color: #bbb;
@@ -227,7 +227,7 @@
 		    margin-bottom: 15px;
 		    margin-top: 5px;
 		}
-		
+
 		#editStudentsDialog,#newClassDialog {
 		    background: white;
 		    padding: 20px;
@@ -255,7 +255,7 @@
 		    margin-bottom: 10px;
 		    font-family: inherit;
 		}
-		
+
 		#newClassDialog input[type="text"]:focus,
 		#newClassDialog textarea:focus {
 		    outline: none;
@@ -335,7 +335,7 @@
 		    border-color: #007AFF;
 		    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
 		}
-		
+
     </style>
 </head>
 <body>
@@ -356,7 +356,7 @@
             <button class="btn" onclick="createNewClass()">Erstellen</button>
             <button class="btn" onclick="hideNewClassDialog()">Abbrechen</button>
         </div>
-		
+
 		<div id="editStudentsDialog" class="hidden">
             <h3>Hinzufügen</h3>
             <div class="add-student-form">
@@ -369,7 +369,7 @@
             </div>
             <button class="btn" onclick="hideEditStudentsDialog()">Fertig</button>
         </div>
-		
+
 
 
 		<div id="groupManagement" class="hidden">
@@ -383,7 +383,7 @@
 		        <button class="btn" onclick="selectRandomStudent()">Zufälligen Namen auswählen</button>
 				<button class="btn" onclick="showRandomList()">Zufällige Namensliste anzeigen</button>
 			</div>
-    
+
 		    <div class="controls">
 		        <div>
 		            <label for="groupCount">Anzahl Gruppen:</label>
@@ -397,12 +397,12 @@
 					<button class="btn" onclick="randomizeGroups()">Gruppen zufällig füllen</button>
 				</div>
 		    </div>
-    
+
 		    <div class="groups-container" id="groupsContainer"></div>
 			<button class="btn copy-btn" id="copyButton" onclick="copyGroupsToClipboard()">Als Text kopieren</button>
 			<button class="btn reset-btn" onclick="resetGroups()">Zurücksetzen</button>
 		</div>
-		
+
 		<div id="randomNameModal" class="modal">
 		    <div class="modal-content">
 		        <span class="close">&times;</span>
@@ -427,8 +427,71 @@
             currentClass: null
         };
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadState();
+        // --- IndexedDB helper functions ---
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('groupingAppDB', 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('app')) {
+                        db.createObjectStore('app');
+                    }
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        async function saveState() {
+            try {
+                const db = await openDB();
+                const tx = db.transaction('app', 'readwrite');
+                const store = tx.objectStore('app');
+                const req = store.put(state, 'state');
+                return new Promise((resolve, reject) => {
+                    req.onsuccess = () => {
+                        resolve();
+                        db.close();
+                    };
+                    req.onerror = () => {
+                        console.error('IndexedDB save error', req.error);
+                        reject(req.error);
+                        db.close();
+                    };
+                });
+            } catch (err) {
+                console.error('saveState error', err);
+            }
+        }
+
+        async function loadState() {
+            try {
+                const db = await openDB();
+                const tx = db.transaction('app', 'readonly');
+                const store = tx.objectStore('app');
+                const req = store.get('state');
+                return new Promise((resolve, reject) => {
+                    req.onsuccess = () => {
+                        if (req.result) {
+                            state = req.result;
+                        }
+                        resolve();
+                        db.close();
+                    };
+                    req.onerror = () => {
+                        console.error('IndexedDB load error', req.error);
+                        reject(req.error);
+                        db.close();
+                    };
+                });
+            } catch (err) {
+                console.error('loadState error', err);
+            }
+        }
+
+        // Ensure we load state from IndexedDB before initializing UI
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadState();
             updateClassSelect();
             if (state.currentClass) {
                 document.getElementById('groupManagement').classList.remove('hidden');
@@ -437,26 +500,15 @@
             }
         });
 
-        function saveState() {
-            localStorage.setItem('groupingAppState', JSON.stringify(state));
-        }
-
-        function loadState() {
-            const savedState = localStorage.getItem('groupingAppState');
-            if (savedState) {
-                state = JSON.parse(savedState);
-            }
-        }
-
         function updateClassSelect() {
             const select = document.getElementById('classSelect');
             select.innerHTML = '<option value="">Klasse auswählen...</option>';
-            
+
 			const sortedClasses = Object.keys(state.classes).sort((a, b) => 
 			    a.localeCompare(b, undefined, {sensitivity: 'base'})
 			);
-            
-            
+
+
             sortedClasses.forEach(className => {
                 const option = document.createElement('option');
                 option.value = className;
@@ -466,7 +518,7 @@
                 }
                 select.appendChild(option);
             });
-            
+
             const deleteButton = document.getElementById('deleteClassButton');
             deleteButton.style.display = state.currentClass ? 'inline-block' : 'none';
             const editButton = document.getElementById('editStudentsButton');
@@ -483,10 +535,10 @@
             document.getElementById('studentsList').value = '';
         }
 
-        function createNewClass() {
+        async function createNewClass() {
             const className = document.getElementById('newClassName').value.trim();
             const studentsText = document.getElementById('studentsList').value.trim();
-    
+
             if (!className) {
                 alert('Bitte geben Sie einen Klassennamen ein.');
                 return;
@@ -496,7 +548,7 @@
 			    .map(s => s.trim())
 			    .filter(s => s.length > 0)
 			    .sort((a, b) => a.localeCompare(b, undefined, {sensitivity: 'base'}));
-            
+
 
             if (students.length < 2) {
                 alert('Bitte geben Sie mindestens zwei Schüler ein.');
@@ -507,29 +559,29 @@
                 students: students
             };
 
-            saveState();
+            await saveState();
             selectClass(className);
             updateClassSelect();
             hideNewClassDialog();
         }
 
-        function deleteCurrentClass() {
+        async function deleteCurrentClass() {
             if (!state.currentClass) return;
-            
+
             if (confirm(`Möchten Sie die Klasse "${state.currentClass}" wirklich löschen?`)) {
                 delete state.classes[state.currentClass];
                 state.currentClass = null;
-                saveState();
+                await saveState();
                 updateClassSelect();
                 document.getElementById('groupManagement').classList.add('hidden');
             }
         }
 
-        function selectClass(className) {
+        async function selectClass(className) {
             const selectedClass = className || document.getElementById('classSelect').value;
             state.currentClass = selectedClass;
-            saveState();
-            
+            await saveState();
+
             if (selectedClass) {
                 document.getElementById('groupManagement').classList.remove('hidden');
                 initializeDragAndDrop();
@@ -544,7 +596,7 @@
 
             const classData = state.classes[state.currentClass];
             const totalStudents = classData.students.length;
-            
+
             let numGroups;
             if (mode === 'count') {
                 numGroups = parseInt(document.getElementById('groupCount').value) || 2;
@@ -557,7 +609,7 @@
 
             const container = document.getElementById('groupsContainer');
             container.innerHTML = '';
-            
+
             for (let i = 0; i < numGroups; i++) {
                 const group = document.createElement('div');
                 group.className = 'group';
@@ -572,7 +624,7 @@
             initializeDragAndDrop();
         }
 
-		function resetGroups() {
+		async function resetGroups() {
 		    if (!state.currentClass) return;
 
 		    if (confirm('Möchten Sie alle Gruppen und deaktivierten Schüler zurücksetzen?')) {
@@ -582,11 +634,11 @@
 		        // Deaktivierte Schüler zurücksetzen
 		        state.classes[state.currentClass].inactiveStudents = [];
 
-		        saveState();
+		        await saveState();
 		        updateStudentsPool();
 		    }
 		}
-        
+
 
 		function updateStudentsPool() {
 		    if (!state.currentClass) return;
@@ -612,7 +664,7 @@
 		        }
 		    });
 		}
-		function toggleStudentActive(student, element) {
+		async function toggleStudentActive(student, element) {
 		    if (!state.classes[state.currentClass].inactiveStudents) {
 		        state.classes[state.currentClass].inactiveStudents = [];
 		    }
@@ -626,9 +678,9 @@
 		        element.classList.remove('inactive-student');
 		    }
 
-		    saveState();
+		    await saveState();
 		}
-        
+
 
         function initializeDragAndDrop() {
             new Sortable(document.getElementById('studentsPool'), {
@@ -650,7 +702,7 @@
             });
         }
 
-		function randomizeGroups() {
+		async function randomizeGroups() {
 		    if (!state.currentClass) return;
 
 		    const groups = Array.from(document.querySelectorAll('.group-content'));
@@ -693,9 +745,10 @@
 		    });
 
 		    updateStudentsPool();
+		    await saveState();
 		}
-		
-		function selectRandomStudent() {
+
+		async function selectRandomStudent() {
 		    if (!state.currentClass) return;
 
 		    const activeStudents = state.classes[state.currentClass].students.filter(
@@ -711,8 +764,8 @@
 		    nameDisplay.textContent = randomStudent;
 		    modal.style.display = 'flex';
 		}
-		
-		
+
+
 		function shuffleArray(array) {
 		    for (let i = array.length - 1; i > 0; i--) {
 		        const j = Math.floor(Math.random() * (i + 1));
@@ -738,13 +791,13 @@
 		    listDisplay.textContent = shuffledStudents.join('\n');
 		    modal.style.display = 'flex';
 		}
-		
+
 		// Zufällige Liste in Zwischenablage kopieren
 		function copyToClipboard() {
 		    const listDisplay = document.getElementById('randomListDisplay');
 		    const copyButton = document.getElementById('copyButton');
 		    const originalText = copyButton.textContent;
-    
+
 		    navigator.clipboard.writeText(listDisplay.textContent).then(() => {
 		        copyButton.textContent = '✓ Kopiert';
 		        setTimeout(() => {
@@ -758,7 +811,7 @@
 		        }, 2000);
 		    });
 		}
-		
+
 		// Gruppen in Zwischenablage kopieren
 		function copyGroupsToClipboard() {
 		    if (!state.currentClass) return;
@@ -799,19 +852,19 @@
 		        console.error("Fehler beim Kopieren:", err);
 		    });
 		}
-		
-		
-		
+
+
+
 
 		// Modal schließen wenn auf X oder außerhalb geklickt wird
 		document.addEventListener('DOMContentLoaded', () => {
 		    const modal = document.getElementById('randomNameModal');
 		    const span = document.getElementsByClassName('close')[0];
-    
+
 		    span.onclick = function() {
 		        modal.style.display = 'none';
 		    }
-    
+
 		    window.onclick = function(event) {
 		        if (event.target == modal) {
 		            modal.style.display = 'none';
@@ -835,7 +888,7 @@
 		        }
 		    }
 		});
-		
+
 		function showEditStudentsDialog() {
             document.getElementById('editStudentsDialog').classList.remove('hidden');
             updateStudentList();
@@ -856,22 +909,22 @@
 			    .forEach(student => {
                 const entry = document.createElement('div');
                 entry.className = 'student-entry';
-    
+
                 const name = document.createElement('span');
                 name.textContent = student;
-    
+
                 const deleteButton = document.createElement('button');
                 deleteButton.className = 'delete-student';
                 deleteButton.textContent = '×';
                 deleteButton.onclick = () => removeStudent(student);
-    
+
                 entry.appendChild(name);
                 entry.appendChild(deleteButton);
                 studentList.appendChild(entry);
             });
         }
 
-        function addStudent() {
+        async function addStudent() {
             if (!state.currentClass) return;
 
             const input = document.getElementById('newStudentName');
@@ -892,35 +945,35 @@
 			    a.localeCompare(b, undefined, {sensitivity: 'base'})
 			);
 
-            saveState();
+            await saveState();
             updateStudentList();
             updateStudentsPool();
             input.value = '';
         }
 
-        function removeStudent(studentName) {
+        async function removeStudent(studentName) {
             if (!state.currentClass) return;
 
             if (confirm(`Möchten Sie ${studentName} wirklich aus der Klasse entfernen?`)) {
                 const index = state.classes[state.currentClass].students.indexOf(studentName);
                 if (index > -1) {
                     state.classes[state.currentClass].students.splice(index, 1);
-        
+
                     // Entferne auch aus inactiveStudents, falls vorhanden
                     const inactiveIndex = state.classes[state.currentClass].inactiveStudents?.indexOf(studentName);
                     if (inactiveIndex > -1) {
                         state.classes[state.currentClass].inactiveStudents.splice(inactiveIndex, 1);
                     }
-        
-                    saveState();
+
+                    await saveState();
                     updateStudentList();
                     updateStudentsPool();
                     updateGroups('count');
                 }
             }
         }
-		
-		
+
+
     </script>
 </body>
 </html>
