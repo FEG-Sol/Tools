@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Unterrichts-Timer</title>
+
+<style>
+	html, body {
+	    margin: 0;
+	    height: 100%;
+	    background: white;
+	    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+	}
+	/* ===== Layout ===== */
+	.app {
+	    height: 100vh;
+	    display: flex;
+	    flex-direction: column;
+	    align-items: center;
+	    justify-content: space-between;
+	}
+	/* ===== Kreis ===== */
+	.timer-area {
+	    position: relative;
+	    height: 50vh;
+	    aspect-ratio: 1 / 1;
+	    margin-top: 20px;
+	}
+	.time-display {
+	    position: absolute;
+	    inset: 0;
+	    display: flex;
+	    align-items: center;
+	    justify-content: center;
+	    font-size: 6vw;
+	    font-weight: bold;
+	    color: black;
+	}
+	svg {
+	    width: 100%;
+	    height: 100%;
+	    transform: rotate(-90deg);
+	}
+	circle {
+	    fill: none;
+	    stroke-width: 10;
+	}
+	.bg { stroke: #eee; }
+	.fg {
+	    stroke: #007AFF;
+	    stroke-linecap: round;
+	}
+	/* ===== Start / Stop ===== */
+	.controls {
+	    display: flex;
+	    gap: 30px;
+	    margin: 20px 0 40px 0;
+	}
+	.btn {
+	    border: none;
+	    border-radius: 10px;
+	    padding: 12px 8px;
+	    font-size: 18px;
+	    cursor: pointer;
+	    background: #e0e0e0;
+	    transition: all 0.2s ease;
+	}
+	.btn:hover {
+	    background: #d0d0d0;
+	    /*transform: scale(1.02);*/
+	}
+	.btn:active {
+	    /*transform: scale(0.98);*/
+	}
+	.btn-start {
+	    background: #007AFF;
+	    color: white;
+	    font-size: 28px;
+	    padding: 18px 50px;
+	}
+	.btn-start:hover {
+	    background: #0066CC;
+	}
+	.btn-start.running {
+	    background: #34C759;
+	}
+	.btn-start.running:hover {
+	    background: #2DB04A;
+	}
+	.btn-stop {
+	    font-size: 28px;
+	    padding: 18px 50px;
+	}
+	/* ===== Menü-Einheit ===== */
+	.menu {
+	    width: 620px;
+	    display: flex;
+	    flex-direction: column;
+	    gap: 16px;
+	    margin-bottom: 30px;
+	}
+	/* ===== Presets (Multi-Button) ===== */
+	.segment {
+	    display: flex;
+	    border-radius: 10px;
+	    overflow: hidden;
+	    flex: 1;
+    	gap: 1px;
+	}
+	.segment button {
+	    flex: 1;
+	    border-radius: 0;
+	}
+	/* ===== Set Row ===== */
+	.set-row {
+	    display: flex;
+	    gap: 12px;
+	}
+	.set-row > * {
+	    flex: 1;
+	}
+	/* ===== Custom ===== */
+	.custom {
+	    display: flex;
+	    gap: 8px;
+	}
+	input[type="number"] {
+	    width: 50px;
+	    font-size: 18px;
+	    padding: 4px;
+	    border: 1px solid #ccc;
+	    border-radius: 10px;
+	    text-align: center;
+		flex: 1;
+	}
+	.custom .btn {
+	    padding: 8px 16px;
+	    white-space: nowrap;
+		flex: 1;
+	}
+	/* ===== iOS Toggle Switch ===== */
+	.toggle-container {
+	    display: flex;
+	    align-items: center;
+	    justify-content: center;
+	    gap: 12px;
+	    padding: 8px;
+	}
+	.toggle-label {
+	    font-size: 18px;
+	    color: #333;
+	    user-select: none;
+	}
+	.toggle-switch {
+	    position: relative;
+	    width: 51px;
+	    height: 31px;
+	    background: #e0e0e0;
+	    border-radius: 31px;
+	    cursor: pointer;
+	    transition: background-color 0.3s ease;
+	}
+	.toggle-switch:hover {
+	    opacity: 0.8;
+	}
+	.toggle-switch.active {
+	    background: #007AFF;
+	}
+	.toggle-slider {
+	    position: absolute;
+	    top: 2px;
+	    left: 2px;
+	    width: 27px;
+	    height: 27px;
+	    background: white;
+	    border-radius: 50%;
+	    transition: transform 0.3s ease;
+	    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+	}
+	.toggle-switch.active .toggle-slider {
+	    transform: translateX(20px);
+	}
+	/* ===== Flash ===== */
+	.flash {
+	    animation: flash 1s steps(1) infinite;
+	}
+	@keyframes flash {
+	    50% {
+	        background: black;
+	        color: white;
+	    }
+	}
+</style>
+</head>
+
+<body>
+<div class="app" id="app">
+
+<!-- Kreis -->
+<div class="timer-area">
+    <svg viewBox="0 0 200 200">
+        <circle class="bg" cx="100" cy="100" r="85"/>
+        <circle class="fg" cx="100" cy="100" r="85"/>
+    </svg>
+    <div class="time-display" id="time">05:00</div>
+</div>
+
+<!-- Start / Stop -->
+<div class="controls">
+    <button class="btn btn-start" id="startBtn" onclick="start()">▶ Start</button>
+    <button class="btn btn-stop" onclick="stop()">■ Stopp</button>
+</div>
+
+<!-- Menü -->
+<div class="menu">
+    <!-- Presets -->
+    <div class="segment">
+        <button class="btn" onclick="setMinutes(5)">5 min</button>
+        <button class="btn" onclick="setMinutes(10)">10 min</button>
+        <button class="btn" onclick="setMinutes(15)">15 min</button>
+        <button class="btn" onclick="setMinutes(30)">30 min</button>
+    </div>
+    <!-- +/- & Custom in einer Zeile -->
+    <div class="set-row">
+        <div class="segment">
+            <button class="btn" onclick="changeTime(-60)">−1 min</button>
+            <button class="btn" onclick="changeTime(60)">+1 min</button>
+        </div>
+        <div class="segment">
+            <button class="btn" onclick="changeTime(-10)">−10 s</button>
+            <button class="btn" onclick="changeTime(10)">+10 s</button>
+        </div>
+        <div class="custom">
+            <input type="number" id="minInput" placeholder="Min">
+            <input type="number" id="secInput" placeholder="Sek">
+            <button class="btn" onclick="setCustom()">OK</button>
+        </div>
+    </div>
+    <!-- iOS Toggle -->
+    <div class="set-row">
+		<div class="toggle-container">
+		    <span class="toggle-label">Warnen bei 10 % verbleibender Zeit</span>
+		    <div class="toggle-switch active" id="flashToggle" onclick="toggleFlash()">
+		        <div class="toggle-slider"></div>
+		    </div>
+		</div>
+    </div>
+</div>
+</div>
+
+<script>
+let total = 300;
+let remaining = total;
+let running = false;
+let startTime = null;
+let flashEnabled = true;
+
+const timeEl = document.getElementById("time");
+const circle = document.querySelector(".fg");
+const app = document.getElementById("app");
+const startBtn = document.getElementById("startBtn");
+
+const r = 85;
+const circumference = 2 * Math.PI * r;
+circle.style.strokeDasharray = circumference;
+
+function render() {
+    if (!running) return;
+
+    const now = performance.now();
+    const elapsed = (now - startTime) / 1000;
+    remaining = Math.max(0, total - elapsed);
+
+    updateDisplay();
+
+    if (remaining > 0) {
+        requestAnimationFrame(render);
+    } else {
+        stop();
+    }
+}
+
+function updateDisplay() {
+    const m = Math.floor(remaining / 60);
+    const s = Math.floor(remaining % 60);
+    timeEl.textContent =
+        String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+
+    const progress = remaining / total;
+    circle.style.strokeDashoffset = circumference * (1 - progress);
+
+    if (flashEnabled && remaining <= total * 0.1 && remaining > 0) {
+        app.classList.add("flash");
+    } else {
+        app.classList.remove("flash");
+    }
+}
+
+function start() {
+    if (running) return;
+    running = true;
+    startBtn.classList.add("running");
+    startBtn.textContent = "⏸ Läuft";
+    startTime = performance.now() - (total - remaining) * 1000;
+    requestAnimationFrame(render);
+}
+
+function stop() {
+    running = false;
+    startBtn.classList.remove("running");
+    startBtn.textContent = "▶ Start";
+    app.classList.remove("flash");
+}
+
+function reset() {
+    running = false;
+    remaining = total;
+    circle.style.strokeDashoffset = 0;
+    startBtn.classList.remove("running");
+    startBtn.textContent = "▶ Start";
+    updateDisplay();
+}
+
+function setMinutes(m) {
+    total = m * 60;
+    reset();
+}
+
+function changeTime(sec) {
+    total = Math.max(0, total + sec);
+    reset();
+}
+
+function setCustom() {
+    const m = parseInt(minInput.value || 0);
+    const s = parseInt(secInput.value || 0);
+    total = m * 60 + s;
+    reset();
+}
+
+function toggleFlash() {
+    flashEnabled = !flashEnabled;
+    document.getElementById("flashToggle")
+        .classList.toggle("active", flashEnabled);
+}
+
+updateDisplay();
+</script>
+</body>
+</html>
