@@ -8,3 +8,6 @@
 
 - [Ranking](https://feg-sol.github.io/Tools//Ranking.html)  
   *Ranking erstellen durch paarweisen Vergleich.*
+
+- [Timer](https://feg-sol.github.io/Tools//timer.html)  
+  *Timer-App für den Unterricht*
