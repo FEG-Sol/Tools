@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Namen lernen</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--ink:#1d2330;--muted:#6b7385;--line:#d9dce3;--accent:#2f6feb;--ok:#1e9e57;--bad:#d23b3b}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{font:16px/1.4 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);-webkit-text-size-adjust:100%;touch-action:manipulation}
+
+/* Kopfzeile */
+#bar{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--line)}
+.group{display:flex;gap:8px;align-items:center}
+select{font:inherit;font-size:16px;min-height:44px;padding:6px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);min-width:170px;max-width:60vw}
+.btn{font:inherit;font-size:16px;min-height:44px;padding:8px 14px;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:hover{background:#eef1f6}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#2560d0}
+.btn.danger{color:var(--bad);border-color:#efc3c3}
+.btn.icon{width:44px;padding:0;font-size:26px;line-height:1;font-weight:600}
+.btn:disabled{opacity:.45;cursor:default}
+.chk{display:flex;align-items:center;gap:8px;min-height:44px;cursor:pointer;user-select:none}
+.chk input{width:22px;height:22px}
+.chk input:disabled+span{color:var(--muted)}
+
+/* Modi + Statistik */
+#modes{display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px 0}
+.seg{font:inherit;font-size:15px;min-height:44px;padding:8px 14px;border:1px solid var(--line);background:#fff;border-radius:999px;cursor:pointer;color:var(--ink)}
+.seg.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+#statbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:10px 14px 0;color:var(--muted);font-size:14px}
+
+/* Layout */
+#layout{display:flex;gap:16px;align-items:flex-start;padding:0 14px 24px}
+#main{flex:1;min-width:0;padding-top:16px}
+#names{width:220px;flex:none;position:sticky;top:12px;margin-top:16px;max-height:calc(100vh - 24px);overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+#names h3{margin:0 0 8px;font-size:15px;color:var(--muted)}
+#names ul{list-style:none;margin:0;padding:0}
+#names li{padding:5px 0;border-bottom:1px solid #eef0f4}
+#names li:last-child{border-bottom:0}
+@media(max-width:640px){#layout{flex-wrap:wrap}#names{width:100%;position:static;max-height:none}}
+
+.stage{max-width:760px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:16px}
+.stage.wide{max-width:1200px;align-items:stretch}
+.empty{max-width:520px;margin:40px auto;text-align:center;color:var(--muted);font-size:18px}
+.q{font-size:20px;font-weight:600}
+.face{background:#fff;padding:8px;border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.12);line-height:0}
+.face canvas{display:block;border-radius:8px}
+.fb{font-size:18px;font-weight:600;min-height:1.4em;text-align:center}
+.fb.ok{color:var(--ok)}
+.fb.bad{color:var(--bad)}
+.btn.big{min-width:150px;font-size:18px}
+
+/* Modus 1 */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;width:100%;max-width:720px}
+.opts.locked{pointer-events:none}
+.opt{font:inherit;font-size:19px;min-height:60px;padding:12px 16px;border:2px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);cursor:pointer}
+.opt:hover{border-color:var(--accent)}
+.opt.ok{background:#d9f5e5;border-color:var(--ok)}
+.opt.bad{background:#fde1e1;border-color:var(--bad)}
+
+/* Modus 2 */
+.row2{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;justify-content:center;width:100%}
+.col2{flex:1;min-width:260px;max-width:420px;display:flex;flex-direction:column;gap:12px}
+.inrow{display:flex;gap:8px}
+.txt{font:inherit;font-size:20px;min-height:52px;padding:8px 12px;border:2px solid var(--line);border-radius:10px;flex:1;min-width:0;background:#fff;color:var(--ink)}
+.txt:focus{outline:none;border-color:var(--accent)}
+.txt:disabled{background:#f0f2f6;color:var(--ink);-webkit-text-fill-color:var(--ink)}
+.sugg{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:10px;background:#fff;max-height:42vh;overflow:auto}
+.sg{font:inherit;font-size:18px;text-align:left;padding:12px 14px;min-height:46px;border:0;border-bottom:1px solid #eef0f4;background:#fff;color:var(--ink);cursor:pointer}
+.sg:last-child{border-bottom:0}
+.sg.on{background:#e6eefc}
+
+/* Modus 3 */
+.prompt{position:sticky;top:0;z-index:5;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.ask{font-size:21px}
+.prompt .fb{font-size:16px;text-align:left;flex:1;min-width:140px;min-height:0}
+.qwrap{position:relative;width:100%;line-height:0}
+.qwrap img{width:100%;height:auto;display:block;border-radius:8px;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.mark{position:absolute;border:3px solid;border-radius:4px;pointer-events:none}
+.mark.ok{border-color:var(--ok);background:rgba(30,158,87,.2)}
+.mark.bad{border-color:var(--bad);background:rgba(210,59,59,.2)}
+.mtag{position:absolute;left:-3px;top:100%;margin-top:3px;font:600 14px/1.2 -apple-system,system-ui,sans-serif;padding:3px 8px;border-radius:5px;color:#fff;white-space:nowrap}
+.mark.ok .mtag{background:var(--ok)}
+.mark.bad .mtag{background:var(--bad)}
+
+/* Dialog "Neue Klasse" */
+#modal{position:fixed;inset:0;background:rgba(20,25,35,.55);z-index:50;display:flex;justify-content:center;padding:12px}
+.panel{background:#fff;border-radius:14px;display:flex;flex-direction:column;width:min(1300px,100%);overflow:hidden}
+.mhead{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+.mhead h2{margin:0;font-size:19px;margin-right:6px}
+#mName{font:inherit;font-size:16px;min-height:44px;padding:6px 12px;border:1px solid var(--line);border-radius:10px;flex:1;min-width:160px;max-width:300px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.mbody{flex:1;overflow:auto;display:grid;grid-template-columns:minmax(0,1fr);gap:16px;padding:14px;align-content:start}
+@media(min-width:640px){.mbody{grid-template-columns:minmax(0,1fr) 280px}}
+.hint{color:var(--muted);margin:0}
+.mimg{margin-bottom:18px}
+.mimg-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;color:var(--muted);font-size:14px}
+.imgwrap{position:relative;width:fit-content;max-width:100%;line-height:0;cursor:crosshair;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.mimgs:not(.scrollmode) .imgwrap{touch-action:none}
+.imgwrap img{display:block;max-width:100%;height:auto;pointer-events:none;border-radius:6px}
+.rect{position:absolute;border:2px solid var(--c,#2f6feb);box-shadow:0 0 0 1px rgba(255,255,255,.75);pointer-events:none}
+.rect.tmp{--c:#2f6feb;background:rgba(47,111,235,.12)}
+.rect.active{border-width:3px;background:rgba(255,230,0,.2)}
+.rect .lab{position:absolute;left:-2px;top:100%;margin-top:2px;font:600 12px/1.2 -apple-system,system-ui,sans-serif;padding:2px 6px;border-radius:4px;color:#fff;background:var(--c);white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.mlist{position:sticky;top:0;align-self:start;max-height:calc(100vh - 190px);overflow:auto;display:flex;flex-direction:column;gap:8px}
+.mrow{display:flex;gap:8px;align-items:center;border-left:5px solid var(--c);padding:4px 0 4px 8px;border-radius:4px}
+.mrow canvas{border-radius:6px;flex:none;background:#eee}
+.mrow input{font:inherit;font-size:16px;min-width:0;flex:1;min-height:44px;padding:6px 10px;border:2px solid var(--line);border-radius:8px}
+.mrow input:focus{outline:none;border-color:var(--accent)}
+.mrow .x{flex:none;width:40px;min-height:44px;border:0;background:none;font-size:20px;color:var(--muted);cursor:pointer}
+.mfoot{display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:12px 14px;border-top:1px solid var(--line);padding-bottom:max(12px,env(safe-area-inset-bottom))}
+#mMsg{margin-right:auto;color:var(--bad);font-size:14px}
+#banner{background:#fde1e1;color:#7a1f1f;padding:10px 14px}
+</style>
+</head>
+<body>
+
+<div id="banner" hidden></div>
+
+<header id="bar">
+  <div class="group">
+    <select id="classSel" aria-label="Klasse"></select>
+    <button id="addBtn" class="btn icon" title="Neue Klasse anlegen" aria-label="Neue Klasse anlegen">+</button>
+    <button id="delBtn" class="btn danger" title="Ausgewählte Klasse löschen">Löschen</button>
+  </div>
+  <label class="chk"><input type="checkbox" id="listChk" disabled><span>Namensliste anzeigen</span></label>
+</header>
+
+<nav id="modes">
+  <button class="seg" data-mode="1">Gesicht → Name · Auswahl</button>
+  <button class="seg" data-mode="2">Gesicht → Name · Tippen</button>
+  <button class="seg" data-mode="3">Name → Gesicht · Anklicken</button>
+</nav>
+
+<div id="statbar" hidden>
+  <span id="statText"></span>
+  <button id="resetBtn" class="btn" style="min-height:36px;padding:4px 12px;font-size:14px">Statistik zurücksetzen</button>
+  <label class="chk" style="min-height:36px;font-size:14px"><input type="checkbox" id="autoChk"><span>Automatisch fortfahren</span></label>
+</div>
+
+<div id="layout">
+  <main id="main"></main>
+  <aside id="names" hidden></aside>
+</div>
+
+<!-- Dialog: neue Klasse -->
+<div id="modal" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-label="Neue Klasse anlegen">
+    <div class="mhead">
+      <h2>Neue Klasse</h2>
+      <input id="mName" type="text" placeholder="Klassenname, z. B. 7a" maxlength="60" autocomplete="off">
+      <label class="btn" for="mFiles">📷 Bilder wählen</label>
+      <input id="mFiles" class="sr" type="file" accept="image/*" multiple>
+      <button id="mMode" class="btn" type="button" title="Auf Touch-Geräten: zwischen Markieren und Scrollen umschalten">✏️ Markieren</button>
+    </div>
+    <div class="mbody">
+      <div id="mImgs" class="mimgs">
+        <p class="hint">Wähle ein oder mehrere Bilder. Ziehe dann mit Maus oder Finger ein Rechteck um jedes Gesicht und tippe den Namen in das Feld, das daneben erscheint. Mit dem Schalter oben („Markieren/Scrollen“) kannst du auf Touch-Geräten zwischen Zeichnen und Blättern wechseln.</p>
+      </div>
+      <div id="mList" class="mlist"></div>
+    </div>
+    <div class="mfoot">
+      <span id="mMsg"></span>
+      <button id="mCancel" class="btn" type="button">Abbrechen</button>
+      <button id="mSave" class="btn primary" type="button">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- Hilfsfunktionen ---------- */
+const $ = s => document.querySelector(s);
+function h(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const k in (attrs || {})) {
+    const v = attrs[k];
+    if (k === 'class') e.className = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of kids.flat()) if (c != null) e.append(c);
+  return e;
+}
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+};
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const norm = s => String(s).trim().replace(/\s+/g, ' ').toLowerCase();
+const normSearch = s => norm(s).replace(/ß/g, 'ss').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function shuffle(a) {
+  a = a.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+const byName = (a, b) => a.localeCompare(b, 'de', { numeric: true });
+
+/* ---------- Datenbank (IndexedDB) ---------- */
+let db = null;
+function openDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('namenlernen', 1);
+    r.onupgradeneeded = () => {
+      r.result.createObjectStore('classes', { keyPath: 'id' });
+      r.result.createObjectStore('stats', { keyPath: 'classId' });
+    };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+function tx(storeName, mode, fn) {
+  return new Promise((res, rej) => {
+    if (!db) return rej(new Error('Kein Speicher verfügbar'));
+    const t = db.transaction(storeName, mode);
+    const rq = fn(t.objectStore(storeName));
+    t.oncomplete = () => res(rq && rq.result);
+    t.onerror = () => rej(t.error);
+    t.onabort = () => rej(t.error || new Error('Abbruch'));
+  });
+}
+
+/* ---------- Zustand ---------- */
+let classes = [];
+let cur = null;      // { cls, imgs:[HTMLImageElement], stats:{classId,data}, lastId }
+let q = null;        // aktuelle Frage { stu, done }
+let mode = parseInt(store.get('mode', '1'), 10) || 1;
+let selToken = 0;
+
+const sel = $('#classSel'), main = $('#main'), listChk = $('#listChk');
+
+/* ---------- Bildausschnitt zeichnen ---------- */
+function cropCanvas(img, s, maxPx) {
+  const iw = img.naturalWidth, ih = img.naturalHeight;
+  const sx = s.x * iw, sy = s.y * ih, sw = s.w * iw, sh = s.h * ih;
+  const sc = maxPx / Math.max(sw, sh);
+  const cw = Math.max(1, Math.round(sw * sc)), ch = Math.max(1, Math.round(sh * sc));
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const c = document.createElement('canvas');
+  c.width = Math.round(cw * dpr); c.height = Math.round(ch * dpr);
+  c.style.width = cw + 'px'; c.style.height = ch + 'px';
+  c.getContext('2d').drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
+  return c;
+}
+
+/* ---------- Klassenauswahl ---------- */
+function fillSelect(selectedId) {
+  sel.replaceChildren();
+  if (!classes.length) {
+    sel.append(h('option', { value: '' }, '– noch keine Klasse –'));
+    sel.disabled = true;
+  } else {
+    sel.disabled = false;
+    [...classes].sort((a, b) => byName(a.name, b.name))
+      .forEach(c => sel.append(h('option', { value: c.id }, c.name)));
+    sel.value = selectedId;
+  }
+  $('#delBtn').disabled = !classes.length;
+}
+
+function loadImg(src) {
+  return new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = () => rej(new Error('Bild konnte nicht geladen werden'));
+    i.src = src;
+  });
+}
+
+async function selectClass(id) {
+  const cls = classes.find(c => c.id === id);
+  const token = ++selToken;
+  cancelAuto();
+  if (!cls) { cur = null; q = null; chrome(); renderEmpty(); return; }
+  store.set('lastClass', id);
+  try {
+    const imgs = await Promise.all(cls.images.map(loadImg));
+    const stats = (await tx('stats', 'readonly', s => s.get(id))) || { classId: id, data: {} };
+    if (token !== selToken) return;
+    cur = { cls, imgs, stats, lastId: null };
+  } catch (e) {
+    if (token !== selToken) return;
+    cur = null; chrome();
+    main.replaceChildren(h('div', { class: 'empty' }, 'Die Klasse konnte nicht geladen werden: ' + e.message));
+    return;
+  }
+  chrome();
+  next();
+}
+
+function chrome() {
+  listChk.disabled = !cur;
+  if (!cur) listChk.checked = false;
+  $('#statbar').hidden = !cur;
+  $('#modes').querySelectorAll('.seg').forEach(b => b.classList.toggle('active', +b.dataset.mode === mode));
+  updateStats();
+  renderNames();
+}
+
+function renderEmpty() {
+  main.replaceChildren(h('div', { class: 'empty' },
+    classes.length ? 'Wähle oben eine Klasse aus.' : 'Noch keine Klasse vorhanden. Lege mit dem Plus-Button oben eine Klasse an.'));
+}
+
+function renderNames() {
+  const on = cur && listChk.checked;
+  const box = $('#names');
+  box.hidden = !on;
+  if (!on) return;
+  const list = cur.cls.students.map(s => s.name).sort(byName);
+  box.replaceChildren(h('h3', {}, `Namen (${list.length})`), h('ul', {}, list.map(n => h('li', {}, n))));
+}
+
+/* ---------- Statistik & Gewichtung ---------- */
+function pickStudent() {
+  const all = cur.cls.students;
+  let pool = all.filter(s => s.id !== cur.lastId);
+  if (!pool.length) pool = all;
+  const d = cur.stats.data;
+  const wts = pool.map(s => (d[s.id] && d[s.id].w) || 1);
+  let r = Math.random() * wts.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < pool.length; i++) { r -= wts[i]; if (r <= 0) return pool[i]; }
+  return pool[pool.length - 1];
+}
+
+function record(stu, ok) {
+  const d = cur.stats.data;
+  const e = d[stu.id] || (d[stu.id] = { n: 0, f: 0, w: 1 });
+  e.n++;
+  if (ok) e.w = Math.max(1, e.w - 0.5);
+  else { e.f++; e.w = Math.min(5, e.w + 2); }
+  tx('stats', 'readwrite', s => s.put(cur.stats)).catch(() => {});
+}
+
+function updateStats() {
+  if (!cur) return;
+  const d = cur.stats.data;
+  let n = 0, f = 0;
+  for (const k in d) { n += d[k].n; f += d[k].f; }
+  let txt = 'Noch keine Antworten.';
+  if (n) {
+    txt = `${n} Antworten · ${Math.round((n - f) / n * 100)} % richtig`;
+    const worst = cur.cls.students.filter(s => d[s.id] && d[s.id].f > 0)
+      .sort((a, b) => d[b.id].f - d[a.id].f).slice(0, 3);
+    if (worst.length) txt += ' · Häufigste Fehler: ' + worst.map(s => `${s.name} (${d[s.id].f})`).join(', ');
+  }
+  $('#statText').textContent = txt;
+}
+
+/* ---------- Fragen ---------- */
+let autoTimer = null;
+function cancelAuto() { clearTimeout(autoTimer); autoTimer = null; }
+
+function next() {
+  cancelAuto();
+  if (!cur) { renderEmpty(); return; }
+  const stu = pickStudent();
+  cur.lastId = stu.id;
+  q = { stu, done: false };
+  if (mode === 1) renderM1();
+  else if (mode === 2) renderM2();
+  else renderM3();
+}
+
+function finish(ok, msg, fb, nextBtn) {
+  fb.textContent = msg;
+  fb.className = 'fb ' + (ok ? 'ok' : 'bad');
+  nextBtn.hidden = false;
+  nextBtn.focus({ preventScroll: true });
+  record(q.stu, ok);
+  updateStats();
+  if ($('#autoChk').checked) autoTimer = setTimeout(next, ok ? 1000 : 2000);
+}
+
+/* Modus 1: Gesicht, Multiple Choice */
+function renderM1() {
+  const stu = q.stu;
+  const seen = new Set([norm(stu.name)]);
+  const others = [];
+  for (const n of shuffle(cur.cls.students.map(s => s.name))) {
+    const k = norm(n);
+    if (!seen.has(k)) { seen.add(k); others.push(n); }
+    if (others.length >= 5) break;
+  }
+  const opts = shuffle([stu.name, ...others]);
+  const fb = h('div', { class: 'fb' });
+  const nextBtn = h('button', { class: 'btn primary big', hidden: true, onclick: next }, 'Weiter');
+  const wrap = h('div', { class: 'opts' });
+  const btns = opts.map(n => h('button', {
+    class: 'opt',
+    onclick: e => {
+      if (q.done) return;
+      q.done = true;
+      const ok = norm(n) === norm(stu.name);
+      wrap.classList.add('locked');
+      btns.forEach(b => { if (norm(b.textContent) === norm(stu.name)) b.classList.add('ok'); });
+      if (!ok) e.currentTarget.classList.add('bad');
+      finish(ok, ok ? 'Richtig!' : 'Leider falsch – richtig ist: ' + stu.name, fb, nextBtn);
+    }
+  }, n));
+  wrap.append(...btns);
+  main.replaceChildren(h('div', { class: 'stage' },
+    h('div', { class: 'q' }, 'Wie heißt diese Person?'),
+    h('div', { class: 'face' }, cropCanvas(cur.imgs[stu.img], stu, 200)),
+    wrap, fb, nextBtn));
+}
+
+/* Modus 2: Gesicht, Eintippen mit Autocomplete */
+function renderM2() {
+  const stu = q.stu;
+  const input = h('input', {
+    type: 'text', class: 'txt', autocomplete: 'off', autocapitalize: 'none', autocorrect: 'off',
+    spellcheck: 'false', enterkeyhint: 'done', placeholder: 'Name eingeben …', 'aria-label': 'Name'
+  });
+  const check = h('button', { class: 'btn primary', type: 'button' }, 'Prüfen');
+  const sugg = h('div', { class: 'sugg', hidden: true });
+  const fb = h('div', { class: 'fb' });
+  const nextBtn = h('button', { class: 'btn primary big', hidden: true, onclick: next }, 'Weiter');
+  let items = [], hi = -1;
+
+  function highlight(i, scroll = true) {
+    hi = i;
+    [...sugg.children].forEach((b, k) => b.classList.toggle('on', k === hi));
+    if (scroll && hi >= 0) sugg.children[hi].scrollIntoView({ block: 'nearest' });
+  }
+  function showSugg() {
+    const v = normSearch(input.value);
+    items = []; hi = -1;
+    if (v) {
+      const names = [...new Set(cur.cls.students.map(s => s.name))];
+      items = names.filter(n => {
+        const ns = normSearch(n);
+        return ns.startsWith(v) || ns.split(' ').some(w => w.startsWith(v));
+      }).sort(byName);
+    }
+    sugg.replaceChildren(...items.map((n, i) => h('button', {
+      type: 'button', class: 'sg',
+      onclick: () => submit(n),
+      // nur bei echter Mausbewegung markieren, damit Markierung und Enter immer übereinstimmen
+      onmousemove: () => { if (hi !== i) highlight(i, false); }
+    }, n)));
+    sugg.hidden = !items.length;
+  }
+  function submit(text) {
+    if (q.done || !text.trim()) return;
+    q.done = true;
+    input.value = text;
+    input.disabled = true; check.disabled = true; sugg.hidden = true;
+    const ok = norm(text) === norm(stu.name);
+    finish(ok, ok ? 'Richtig!' : 'Leider falsch – richtig ist: ' + stu.name, fb, nextBtn);
+  }
+  input.addEventListener('input', showSugg);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' && items.length) { e.preventDefault(); highlight((hi + 1) % items.length); }
+    else if (e.key === 'ArrowUp' && items.length) { e.preventDefault(); highlight((hi - 1 + items.length) % items.length); }
+    else if (e.key === 'Enter') { e.preventDefault(); submit(hi >= 0 ? items[hi] : items.length === 1 ? items[0] : input.value); }
+    else if (e.key === 'Escape') { sugg.hidden = true; }
+  });
+  check.addEventListener('click', () => submit(input.value));
+
+  main.replaceChildren(h('div', { class: 'stage' },
+    h('div', { class: 'q' }, 'Wie heißt diese Person?'),
+    h('div', { class: 'row2' },
+      h('div', { class: 'face' }, cropCanvas(cur.imgs[stu.img], stu, 200)),
+      h('div', { class: 'col2' }, h('div', { class: 'inrow' }, input, check), sugg, fb, nextBtn))));
+  input.focus();
+}
+
+/* Modus 3: Name vorgegeben, Person im Bild anklicken */
+function renderM3() {
+  const stu = q.stu;
+  const fb = h('span', { class: 'fb' });
+  const nextBtn = h('button', { class: 'btn primary', hidden: true, onclick: next }, 'Weiter');
+  const bar = h('div', { class: 'prompt' }, h('span', { class: 'ask' }, 'Wo ist ', h('b', {}, stu.name), '?'), fb, nextBtn);
+
+  function mark(s, cls) {
+    const m = h('div', {
+      class: 'mark ' + cls,
+      style: `left:${s.x * 100}%;top:${s.y * 100}%;width:${s.w * 100}%;height:${s.h * 100}%`
+    }, h('span', { class: 'mtag' }, s.name));
+    wraps[s.img].append(m);
+    return m;
+  }
+  function findHit(i, px, py, r) {
+    const c = cur.cls.students.filter(s => s.img === i);
+    const inside = c.filter(s => px >= s.x && px <= s.x + s.w && py >= s.y && py <= s.y + s.h);
+    if (inside.length) return inside.sort((a, b) => a.w * a.h - b.w * b.h)[0];
+    let best = null, bd = Infinity;
+    for (const s of c) {
+      const dx = (px - (s.x + s.w / 2)) * r.width, dy = (py - (s.y + s.h / 2)) * r.height;
+      const d = Math.hypot(dx, dy), lim = Math.max(s.w * r.width, s.h * r.height);
+      if (d < lim && d < bd) { bd = d; best = s; }
+    }
+    return best;
+  }
+  function onClick(e, i, w) {
+    if (q.done) return;
+    const r = w.getBoundingClientRect();
+    const hit = findHit(i, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height, r);
+    if (!hit) return;
+    q.done = true;
+    const ok = hit.id === stu.id || norm(hit.name) === norm(stu.name);
+    if (ok) {
+      mark(hit, 'ok');
+      finish(true, 'Richtig!', fb, nextBtn);
+    } else {
+      const target = mark(stu, 'ok');
+      mark(hit, 'bad');
+      finish(false, `Falsch – das war ${hit.name}. Gesucht war ${stu.name} (grün).`, fb, nextBtn);
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+  }
+  const wraps = cur.cls.images.map((src, i) => {
+    const w = h('div', { class: 'qwrap' }, h('img', { src, alt: 'Klassenfoto ' + (i + 1), draggable: 'false' }));
+    w.addEventListener('click', e => onClick(e, i, w));
+    return w;
+  });
+  main.replaceChildren(h('div', { class: 'stage wide' }, bar, ...wraps));
+  window.scrollTo({ top: 0 });
+}
+
+/* ---------- Dialog: neue Klasse ---------- */
+const modal = $('#modal'), mImgs = $('#mImgs'), mList = $('#mList'), mMsg = $('#mMsg');
+let M = null;
+
+function openModal() {
+  M = { images: [], studs: [], counter: 0, scrollMode: false, busy: false };
+  $('#mName').value = '';
+  mImgs.classList.remove('scrollmode');
+  mImgs.replaceChildren(h('p', { class: 'hint' },
+    'Wähle ein oder mehrere Bilder. Ziehe dann mit Maus oder Finger ein Rechteck um jedes Gesicht und tippe den Namen in das Feld, das daneben erscheint. Mit dem Schalter oben („Markieren/Scrollen“) kannst du auf Touch-Geräten zwischen Zeichnen und Blättern wechseln.'));
+  mList.replaceChildren();
+  mMsg.textContent = '';
+  $('#mMode').textContent = '✏️ Markieren';
+  $('#mSave').disabled = false;
+  modal.hidden = false;
+  document.body.style.overflow = 'hidden';
+  $('#mName').focus();
+}
+function closeModal(ask) {
+  if (ask && M && M.studs.length && !confirm('Eingaben verwerfen?')) return;
+  modal.hidden = true;
+  document.body.style.overflow = '';
+  M = null;
+}
+
+async function processFile(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImg(url);
+    const sc = Math.min(1, 2000 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.88);
+  } finally { URL.revokeObjectURL(url); }
+}
+
+async function addFiles(files) {
+  if (!M) return;
+  mMsg.textContent = 'Bilder werden verarbeitet …';
+  for (const f of files) {
+    try {
+      const dataUrl = await processFile(f);
+      if (!M) return;
+      addImageBlock(dataUrl);
+    } catch (e) { mMsg.textContent = 'Ein Bild konnte nicht gelesen werden.'; return; }
+  }
+  mMsg.textContent = '';
+}
+
+function addImageBlock(dataUrl) {
+  if (!M.images.length) mImgs.replaceChildren();
+  const imgEl = h('img', { src: dataUrl, alt: '', draggable: 'false' });
+  const wrap = h('div', { class: 'imgwrap' }, imgEl);
+  const obj = { id: uid(), dataUrl, el: imgEl, wrap };
+  M.images.push(obj);
+  const block = h('div', { class: 'mimg' },
+    h('div', { class: 'mimg-head' },
+      h('span', {}, 'Bild ' + M.images.length),
+      h('button', { class: 'btn', type: 'button', style: 'min-height:36px;padding:4px 10px;font-size:14px', onclick: () => removeImage(obj, block) }, 'Bild entfernen')),
+    wrap);
+  mImgs.append(block);
+  setupDraw(wrap, obj);
+}
+
+function removeImage(obj, block) {
+  M.studs.filter(s => s.imgId === obj.id).forEach(removeStudent);
+  M.images = M.images.filter(i => i !== obj);
+  block.remove();
+  if (!M.images.length) mImgs.append(h('p', { class: 'hint' }, 'Noch kein Bild gewählt.'));
+}
+
+function removeStudent(s) {
+  s.rectEl.remove(); s.row.remove();
+  M.studs = M.studs.filter(x => x !== s);
+}
+
+function setupDraw(wrap, obj) {
+  let drag = null;
+  const clamp = v => Math.max(0, Math.min(1, v));
+  const pt = (e, r) => ({ x: clamp((e.clientX - r.left) / r.width), y: clamp((e.clientY - r.top) / r.height) });
+  const place = (el, d) => {
+    const x = Math.min(d.x0, d.x1), y = Math.min(d.y0, d.y1);
+    el.style.left = x * 100 + '%'; el.style.top = y * 100 + '%';
+    el.style.width = Math.abs(d.x1 - d.x0) * 100 + '%'; el.style.height = Math.abs(d.y1 - d.y0) * 100 + '%';
+  };
+  wrap.addEventListener('pointerdown', e => {
+    if (M.scrollMode || drag) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    const r = wrap.getBoundingClientRect(), p = pt(e, r);
+    drag = { id: e.pointerId, x0: p.x, y0: p.y, x1: p.x, y1: p.y, el: h('div', { class: 'rect tmp' }) };
+    wrap.append(drag.el);
+    place(drag.el, drag);
+    try { wrap.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  wrap.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const p = pt(e, wrap.getBoundingClientRect());
+    drag.x1 = p.x; drag.y1 = p.y;
+    place(drag.el, drag);
+  });
+  const end = (e, cancel) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const d = drag; drag = null;
+    const r = wrap.getBoundingClientRect();
+    const w = Math.abs(d.x1 - d.x0), hh = Math.abs(d.y1 - d.y0);
+    if (cancel || w * r.width < 14 || hh * r.height < 14) { d.el.remove(); return; }
+    createStudent(obj, d.el, Math.min(d.x0, d.x1), Math.min(d.y0, d.y1), w, hh);
+  };
+  wrap.addEventListener('pointerup', e => end(e, false));
+  wrap.addEventListener('pointercancel', e => end(e, true));
+}
+
+function createStudent(obj, rectEl, x, y, w, hh) {
+  const idx = ++M.counter;
+  const color = `hsl(${(idx * 47) % 360} 78% 42%)`;
+  const s = { id: uid(), imgId: obj.id, x, y, w, h: hh, name: 'Name ' + idx, rectEl };
+  rectEl.classList.remove('tmp');
+  rectEl.style.setProperty('--c', color);
+  const lab = h('span', { class: 'lab' }, s.name);
+  rectEl.append(lab);
+
+  const input = h('input', {
+    type: 'text', value: s.name, autocomplete: 'off', autocapitalize: 'words', autocorrect: 'off',
+    spellcheck: 'false', enterkeyhint: 'done', 'aria-label': 'Name für ' + s.name
+  });
+  const row = h('div', { class: 'mrow', style: `--c:${color}` },
+    cropCanvas(obj.el, s, 44), input,
+    h('button', { class: 'x', type: 'button', title: 'Markierung löschen', 'aria-label': 'Markierung löschen', onclick: () => removeStudent(s) }, '✕'));
+  s.row = row; s.input = input;
+  input.addEventListener('input', () => { s.name = input.value; lab.textContent = input.value; });
+  input.addEventListener('focus', () => { M.studs.forEach(o => o.rectEl.classList.toggle('active', o === s)); });
+  input.addEventListener('blur', () => rectEl.classList.remove('active'));
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } });
+
+  M.studs.push(s);
+  mList.append(row);
+  input.focus();
+  input.select();
+  try { input.setSelectionRange(0, input.value.length); } catch (_) {}
+  row.scrollIntoView({ block: 'nearest' });
+}
+
+async function saveClass() {
+  if (!M || M.busy) return;
+  const name = $('#mName').value.trim();
+  if (!name) { mMsg.textContent = 'Bitte einen Klassennamen eingeben.'; $('#mName').focus(); return; }
+  if (!M.images.length) { mMsg.textContent = 'Bitte mindestens ein Bild wählen.'; return; }
+  if (!M.studs.length) { mMsg.textContent = 'Bitte mindestens ein Gesicht markieren.'; return; }
+  M.busy = true; $('#mSave').disabled = true; mMsg.textContent = '';
+  const cls = {
+    id: uid(), name, created: Date.now(),
+    images: M.images.map(i => i.dataUrl),
+    students: M.studs.map((s, k) => ({
+      id: uid(), name: s.name.trim() || ('Name ' + (k + 1)),
+      img: M.images.findIndex(i => i.id === s.imgId), x: s.x, y: s.y, w: s.w, h: s.h
+    }))
+  };
+  try {
+    await tx('classes', 'readwrite', st => st.put(cls));
+  } catch (e) {
+    M.busy = false; $('#mSave').disabled = false;
+    mMsg.textContent = 'Speichern fehlgeschlagen: ' + (e && e.message ? e.message : 'unbekannter Fehler');
+    return;
+  }
+  classes.push(cls);
+  closeModal(false);
+  fillSelect(cls.id);
+  selectClass(cls.id);
+}
+
+/* ---------- Events ---------- */
+$('#addBtn').addEventListener('click', openModal);
+$('#mCancel').addEventListener('click', () => closeModal(true));
+$('#mSave').addEventListener('click', saveClass);
+$('#mFiles').addEventListener('change', e => { const f = [...e.target.files]; e.target.value = ''; addFiles(f); });
+$('#mMode').addEventListener('click', () => {
+  M.scrollMode = !M.scrollMode;
+  mImgs.classList.toggle('scrollmode', M.scrollMode);
+  $('#mMode').textContent = M.scrollMode ? '✋ Scrollen' : '✏️ Markieren';
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeModal(true); });
+
+sel.addEventListener('change', () => selectClass(sel.value));
+listChk.addEventListener('change', renderNames);
+
+$('#autoChk').checked = store.get('auto', '0') === '1';
+$('#autoChk').addEventListener('change', e => {
+  store.set('auto', e.target.checked ? '1' : '0');
+  if (!e.target.checked) cancelAuto();
+});
+
+$('#delBtn').addEventListener('click', async () => {
+  if (!cur) return;
+  if (!confirm(`Klasse „${cur.cls.name}“ wirklich löschen? Bilder und Statistik gehen verloren.`)) return;
+  const id = cur.cls.id;
+  try {
+    await tx('classes', 'readwrite', s => s.delete(id));
+    await tx('stats', 'readwrite', s => s.delete(id));
+  } catch (e) { alert('Löschen fehlgeschlagen: ' + e.message); return; }
+  classes = classes.filter(c => c.id !== id);
+  const first = [...classes].sort((a, b) => byName(a.name, b.name))[0];
+  fillSelect(first && first.id);
+  selectClass(first ? first.id : null);
+});
+
+$('#resetBtn').addEventListener('click', () => {
+  if (!cur || !confirm('Statistik dieser Klasse zurücksetzen?')) return;
+  cur.stats.data = {};
+  tx('stats', 'readwrite', s => s.put(cur.stats)).catch(() => {});
+  updateStats();
+});
+
+$('#modes').addEventListener('click', e => {
+  const b = e.target.closest('.seg');
+  if (!b) return;
+  mode = +b.dataset.mode;
+  store.set('mode', String(mode));
+  $('#modes').querySelectorAll('.seg').forEach(x => x.classList.toggle('active', x === b));
+  if (cur) next();
+});
+
+/* ---------- Start ---------- */
+(async function init() {
+  try {
+    db = await openDB();
+    classes = (await tx('classes', 'readonly', s => s.getAll())) || [];
+  } catch (e) {
+    db = null; classes = [];
+    const b = $('#banner');
+    b.textContent = 'Der Browser-Speicher (IndexedDB) ist nicht verfügbar – Klassen können nicht gespeichert werden. Bitte nicht im privaten Modus öffnen.';
+    b.hidden = false;
+  }
+  const sorted = [...classes].sort((a, b) => byName(a.name, b.name));
+  const last = store.get('lastClass', '');
+  const startId = classes.some(c => c.id === last) ? last : (sorted[0] && sorted[0].id);
+  fillSelect(startId);
+  chrome();
+  if (startId) selectClass(startId); else renderEmpty();
+})();
+})();
+</script>
+</body>
+</html>
