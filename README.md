@@ -11,3 +11,6 @@
 
 - [Timer](https://feg-sol.github.io/Tools//timer.html)  
   *Timer-App für den Unterricht*
+
+- [Namen lernen](https://feg-sol.github.io/Tools//namen-lernen.html)  
+  *Bilder laden und Gesichter markieren*
