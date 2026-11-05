@@ -418,7 +418,7 @@ function finish(ok, msg, fb, nextBtn) {
   nextBtn.focus({ preventScroll: true });
   record(q.stu, ok);
   updateStats();
-  if ($('#autoChk').checked) autoTimer = setTimeout(next, ok ? 500 : 2000);
+  if (ok && $('#autoChk').checked) autoTimer = setTimeout(next, 750);
 }
 
 /* Modus 1: Gesicht, Multiple Choice */
