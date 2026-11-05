@@ -282,7 +282,7 @@ async function selectClass(id) {
     const imgs = await Promise.all(cls.images.map(loadImg));
     const stats = (await tx('stats', 'readonly', s => s.get(id))) || { classId: id, data: {} };
     if (token !== selToken) return;
-    cur = { cls, imgs, stats, lastId: null };
+    cur = { cls, imgs, stats, lastId: null, queue: [] };
   } catch (e) {
     if (token !== selToken) return;
     cur = null; chrome();
@@ -317,24 +317,68 @@ function renderNames() {
 }
 
 /* ---------- Statistik & Gewichtung ---------- */
-function pickStudent() {
-  const all = cur.cls.students;
-  let pool = all.filter(s => s.id !== cur.lastId);
-  if (!pool.length) pool = all;
-  const d = cur.stats.data;
-  const wts = pool.map(s => (d[s.id] && d[s.id].w) || 1);
-  let r = Math.random() * wts.reduce((a, b) => a + b, 0);
-  for (let i = 0; i < pool.length; i++) { r -= wts[i]; if (r <= 0) return pool[i]; }
-  return pool[pool.length - 1];
+/* QUEUE START */
+const GAP = 3;   // so viele andere Karten liegen mindestens zwischen zwei Auftritten desselben Namens
+function isHeavy(s) {
+  const e = cur.stats.data[s.id];
+  return !!e && e.n >= 3 && e.f / e.n > 0.3;
 }
+function buildRound() {
+  const all = cur.cls.students;
+  const round = shuffle(all);
+  for (const s of all) {
+    if (!isHeavy(s)) continue;
+    const cand = [];
+    for (let p = 0; p <= round.length; p++) {
+      let ok = true;
+      for (let k = Math.max(0, p - GAP); k < Math.min(round.length, p + GAP); k++) if (round[k] === s) { ok = false; break; }
+      if (ok) cand.push(p);
+    }
+    if (cand.length) round.splice(cand[Math.floor(Math.random() * cand.length)], 0, s);
+  }
+  return round;
+}
+function refill(minLen) {
+  const q = cur.queue;
+  while (q.length < minLen) {
+    const round = buildRound();
+    const last = q.length ? q[q.length - 1] : cur.cls.students.find(s => s.id === cur.lastId);
+    if (last && round.length > 1 && round[0] === last) {
+      const j = round.findIndex((s, i) => i > 0 && s !== last);
+      if (j > 0) [round[0], round[j]] = [round[j], round[0]];
+    }
+    q.push(...round);
+  }
+}
+function pickStudent() {
+  refill(GAP + 2);
+  const q = cur.queue;
+  // Sicherheitsnetz: nie zweimal derselbe Name direkt hintereinander, solange es eine Alternative gibt
+  if (q[0].id === cur.lastId) {
+    const j = q.findIndex(s => s.id !== cur.lastId);
+    if (j > 0) [q[0], q[j]] = [q[j], q[0]];
+  }
+  return q.shift();
+}
+function scheduleRepeat(stu) {
+  const q = cur.queue;
+  const gap = Math.min(GAP, cur.cls.students.length - 1);
+  refill(gap + GAP + 2);
+  // Steht der Name schon bald wieder in der Schlange, wird diese Karte durch die Wiederholung ersetzt (kein Aufstauen)
+  for (let i = q.length - 1; i >= 0; i--) if (q[i] === stu && i < gap + GAP) q.splice(i, 1);
+  let p = gap;
+  while (p <= q.length && (q[p - 1] === stu || q[p] === stu)) p++;
+  q.splice(Math.min(p, q.length), 0, stu);
+}
+/* QUEUE END */
 
 function record(stu, ok) {
   const d = cur.stats.data;
-  const e = d[stu.id] || (d[stu.id] = { n: 0, f: 0, w: 1 });
+  const e = d[stu.id] || (d[stu.id] = { n: 0, f: 0 });
   e.n++;
-  if (ok) e.w = Math.max(1, e.w - 0.5);
-  else { e.f++; e.w = Math.min(5, e.w + 2); }
+  if (!ok) e.f++;
   tx('stats', 'readwrite', s => s.put(cur.stats)).catch(() => {});
+  if (!ok) scheduleRepeat(stu);
 }
 
 function updateStats() {
